@@ -6,22 +6,17 @@ const DepartmentSchema = new Schema(
       type: String,
       required: [true, "Department Name is required"],
     },
-
-    status: {
-      type: Number,
-      enum: [0, 1],
-      default: 0,
-    },
+    description: String,
+    status: Boolean,
   },
   { timestamps: true, virtuals: true }
 );
 
 DepartmentSchema.methods.toJSON = function () {
-  const dept = this;
-  const deptObject = dept.toObject();
-
-  delete deptObject.__v;
-  return deptObject;
+  const { __v, _id, ...object } = this.toObject();
+  object.id = _id;
+  delete object.__v;
+  return object;
 };
 
 const DepartmentModel = model("departments", DepartmentSchema);

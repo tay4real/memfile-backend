@@ -14,8 +14,6 @@ const generateJWT = async (payload) => {
   try {
     const token = await jwt.sign(payload, process.env.JWT_SECRET, {
       expiresIn: "1h",
-      issuer: process.env.JWT_ISSUER,
-      audience: process.env.JWT_AUDIENCE,
     });
     return token;
   } catch (error) {

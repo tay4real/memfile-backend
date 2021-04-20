@@ -4,7 +4,6 @@ const { join } = require("path");
 const listEndpoints = require("express-list-endpoints");
 const mongoose = require("mongoose");
 const cookieParser = require("cookie-parser");
-
 const routes = require("./routes");
 const { httpErrorHandler } = require("./utils/errorHandler");
 
@@ -51,6 +50,7 @@ mongoose
       console.info(" ✅  Server is running on port " + port);
     })
   )
-  .catch((error) =>
-    console.error(" ❌ Error : server is not running :  " + error)
-  );
+  .catch((error) => {
+    console.error(" ❌ Error : server is not running :  " + error);
+    process.exit();
+  });

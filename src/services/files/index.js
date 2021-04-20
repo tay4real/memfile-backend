@@ -43,7 +43,10 @@ fileRouter.get("/personalfiles", authorize, async (req, res, next) => {
     const personal_files = files.filter(
       (file) => file.status === 0 && file.file_type === "Personal File"
     );
-    res.send({ links: query.links("/personalfiles", total), personal_files });
+    res.send({
+      links: query.links("/personalfiles", total),
+      personal_files,
+    });
   } catch (error) {
     next(new Error(error.message));
   }

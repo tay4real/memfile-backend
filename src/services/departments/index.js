@@ -16,14 +16,14 @@ deptRouter.get(
   async (req, res, next) => {
     try {
       const query = q2m(req.query);
-
-      const alldepts = await deptModel
+      const total = await deptModel.countDocuments(query.criteria);
+      const depts = await deptModel
         .find(query.criteria)
         .sort(query.options.sort)
         .skip(query.options.skip)
         .limit(query.options.limit);
 
-      res.send(alldepts);
+      res.send({ links: query.links("/depts", total), depts, total });
     } catch (error) {
       next(new Error(error.message));
     }
