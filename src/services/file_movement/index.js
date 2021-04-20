@@ -4,12 +4,10 @@ const UserModel = require("../users/users.schema");
 const FileModel = require("../files/files.schema");
 const {
   authorize,
-  checkRefreshToken,
   checkImplementationOfficer,
   checkAdmin,
   checkSuperUser,
-} = require("../../utils/middlewares");
-const { APIError } = require("../../utils");
+} = require("../../utils/auth/middleware");
 
 filemovementRouter.put(
   "/:user_id/requestfile/:file_id",
@@ -59,7 +57,7 @@ filemovementRouter.put(
         next();
       }
     } catch (error) {
-      next(new APIError(error.message, 404));
+      next(new Error(error.message));
     }
   }
 );
@@ -136,7 +134,7 @@ filemovementRouter.put(
         next();
       }
     } catch (error) {
-      next(new APIError(error.message, 404));
+      next(new Error(error.message));
     }
   }
 );
@@ -184,7 +182,7 @@ filemovementRouter.put(
         },
       });
     } catch (error) {
-      next(new APIError(error.message, 404));
+      next(new Error(error.message));
     }
   }
 );

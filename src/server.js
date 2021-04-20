@@ -6,7 +6,7 @@ const mongoose = require("mongoose");
 const cookieParser = require("cookie-parser");
 
 const routes = require("./routes");
-const { httpErrorHandler } = require("./utils");
+const { httpErrorHandler } = require("./utils/errorHandler");
 
 const server = express();
 
@@ -27,6 +27,10 @@ const staticFolderPath = join(__dirname, "../public");
 server.use(express.static(staticFolderPath));
 server.use(express.json());
 server.use(cookieParser());
+// simple route
+server.get("/", (req, res) => {
+  res.json({ message: "Welcome to E-filing application." });
+});
 server.use("/api", routes);
 
 // Error handler middlewares

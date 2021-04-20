@@ -1,6 +1,6 @@
 const { Schema, model } = require("mongoose");
 const bcrypt = require("bcryptjs");
-const { defaultAvatar } = require("../../utils/users");
+const { defaultAvatar } = require("../../utils/defaultAvatar");
 
 const UserSchema = new Schema(
   {
@@ -48,13 +48,6 @@ const UserSchema = new Schema(
       enum: [0, 1],
       default: 0,
     },
-    refreshTokens: [
-      {
-        token: {
-          type: String,
-        },
-      },
-    ],
   },
   { timestamps: true, virtuals: true }
 );

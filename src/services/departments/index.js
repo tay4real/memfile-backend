@@ -3,10 +3,8 @@ const {
   authorize,
   checkSuperUser,
   checkAdmin,
-  checkImplementationOfficer,
-} = require("../../utils/middlewares");
-const { APIError } = require("../../utils");
-
+} = require("../../utils/auth/middleware");
+const q2m = require("query-to-mongo");
 const deptModel = require("./department.schema");
 
 // list all departments [accessible to SuperUser and Admin ]
@@ -17,10 +15,17 @@ deptRouter.get(
 
   async (req, res, next) => {
     try {
-      const depts = await deptModel.find();
-      res.send(depts);
+      const query = q2m(req.query);
+
+      const alldepts = await deptModel
+        .find(query.criteria)
+        .sort(query.options.sort)
+        .skip(query.options.skip)
+        .limit(query.options.limit);
+
+      res.send(alldepts);
     } catch (error) {
-      next(new APIError(error.message, 500));
+      next(new Error(error.message));
     }
   }
 );
@@ -41,7 +46,7 @@ deptRouter.get(
         next(new APIError("Department not found", 404));
       }
     } catch (error) {
-      next(new APIError(error.message, 500));
+      next(new Error(error.message));
     }
   }
 );
@@ -53,12 +58,13 @@ deptRouter.post(
   checkSuperUser,
   async (req, res, next) => {
     try {
+      console.log(req.body);
       const newDept = new deptModel(req.body);
       const { _id } = await newDept.save();
 
-      res.status(201).send(_id);
+      res.status(201).send(newDept);
     } catch (error) {
-      next(new APIError(error.message, 500));
+      next(new Error(error.message));
     }
   }
 );
@@ -73,10 +79,10 @@ deptRouter.put("/:id", authorize, checkSuperUser, async (req, res, next) => {
     if (dept) {
       res.send(dept);
     } else {
-      next(new APIError("Department not found", 404));
+      next(new Error("Department not found", 404));
     }
   } catch (error) {
-    next(new APIError(error.message, 500));
+    next(new Error(error.message));
   }
 });
 
@@ -91,7 +97,7 @@ deptRouter.put(
         res.send(trashDept);
       }
     } catch (error) {
-      next(new APIError(error.message, 500));
+      next(new Error(error.message));
     }
   }
 );
@@ -107,7 +113,7 @@ deptRouter.put(
         res.send(restoreDept);
       }
     } catch (error) {
-      next(new APIError(error.message, 500));
+      next(new Error(error.message));
     }
   }
 );
@@ -118,16 +124,36 @@ deptRouter.delete(
   checkSuperUser,
   async (req, res, next) => {
     try {
-      const file = await deptModel.deleteDept(req.params.id);
-      if (file) {
+      const dept = await deptModel.deleteDept(req.params.id);
+      if (dept) {
         res.send("Deleted");
       } else {
         next();
       }
     } catch (error) {
-      next(new APIError(error.message, 500));
+      next(new Error(error.message));
     }
   }
 );
+
+deptRouter.delete("/", authorize, checkSuperUser, async (req, res, next) => {
+  try {
+    const data = await deptModel.deleteMany({});
+    if (data) {
+      res.send({
+        message: `${data.deletedCount} departments were deleted successfully!`,
+      });
+    } else {
+      next();
+    }
+  } catch (error) {
+    next(
+      new Error({
+        message:
+          err.message || "Some error occurred while removing all departments.",
+      })
+    );
+  }
+});
 
 module.exports = deptRouter;

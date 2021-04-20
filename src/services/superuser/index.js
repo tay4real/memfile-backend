@@ -1,10 +1,7 @@
 const superUserRouter = require("express").Router();
 const UserModel = require("../users/users.schema");
-
-const { APIError } = require("../../utils");
-
-const { authenticate } = require("../../utils/jwt");
-const { authorize, checkSuperUser } = require("../../utils/middlewares");
+const { authenticate } = require("../../utils/auth/tools");
+const { authorize, checkSuperUser } = require("../../utils/auth/middleware");
 const q2m = require("query-to-mongo");
 
 superUserRouter.get(
@@ -17,13 +14,15 @@ superUserRouter.get(
       const total = await UserModel.countDocuments(query.criteria);
 
       const users = await UserModel.find(query.criteria, query.options.fields)
+        .find(query.criteria)
+        .sort(query.options.sort)
         .skip(query.options.skip)
         .limit(query.options.limit)
-        .sort(query.options.sort);
+        .populate("departments");
 
       res.send({ links: query.links("/users", total), users });
     } catch (error) {
-      next(new APIError(error.message, 500));
+      next(new Error(error.message));
     }
   }
 );
@@ -45,7 +44,7 @@ superUserRouter.get(
       const active_users = users.filter((user) => user.status === 0);
       res.send({ links: query.links("/users", total), active_users });
     } catch (error) {
-      next(new APIError(error.message, 500));
+      next(new Error(error.message));
     }
   }
 );
@@ -67,22 +66,7 @@ superUserRouter.get(
       const trashed_users = users.filter((user) => user.status === 1);
       res.send({ links: query.links("/users", total), trashed_users });
     } catch (error) {
-      next(new APIError(error.message, 500));
-    }
-  }
-);
-
-superUserRouter.post(
-  "/users/new",
-
-  async (req, res, next) => {
-    try {
-      const newUser = await new UserModel(req.body).save();
-      res.send(newUser);
-    } catch (error) {
-      if (error.code === 11000)
-        next(new APIError("Email is already in use", 400));
-      next(error);
+      next(new Error(error.message));
     }
   }
 );
@@ -106,7 +90,7 @@ superUserRouter.get(
       }
     } catch (error) {
       console.log(error);
-      next(new APIError(error.message, 500));
+      next(new Error(error.message));
     }
   }
 );
@@ -148,7 +132,7 @@ superUserRouter.put(
         res.send(trashUser);
       }
     } catch (error) {
-      next(new APIError(error.message, 500));
+      next(new Error(error.message));
     }
   }
 );
@@ -164,7 +148,7 @@ superUserRouter.put(
         res.send(restoreUser);
       }
     } catch (error) {
-      next(new APIError(error.message, 500));
+      next(new Error(error.message));
     }
   }
 );
@@ -182,7 +166,7 @@ superUserRouter.delete(
         next();
       }
     } catch (error) {
-      next(new APIError(error.message, 500));
+      next(new Error(error.message));
     }
   }
 );

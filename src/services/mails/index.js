@@ -3,22 +3,14 @@ const fs = require("fs");
 const path = require("path");
 const PDFDocument = require("pdfkit");
 
-const {
-  cloudinaryMail,
-  cloudinaryDestroy,
-} = require("../../utils/middlewares/cloudinary");
-const multer = require("multer");
+const { cloudinaryMail, cloudinaryDestroy } = require("../../utils/cloudinary");
 const q2m = require("query-to-mongo");
-const { APIError } = require("../../utils");
 
 const {
   authorize,
-  checkRefreshToken,
   checkSuperUser,
   checkAdmin,
-  checkOfficer,
-  checkImplementationOfficer,
-} = require("../../utils/middlewares");
+} = require("../../utils/auth/middleware");
 
 const mailModel = require("./mail.schema");
 
@@ -38,7 +30,7 @@ mailRouter.get("/", authorize, async (req, res, next) => {
 
     res.send({ links: query.links("/mails", total), mails });
   } catch (error) {
-    next(new APIError(error.message, 500));
+    next(new Error(error.message));
   }
 });
 
@@ -57,7 +49,7 @@ mailRouter.get("/trash", authorize, async (req, res, next) => {
 
     res.send({ links: query.links("/mails", total), mails });
   } catch (error) {
-    next(new APIError(error.message, 500));
+    next(new Error(error.message));
   }
 });
 
@@ -78,7 +70,7 @@ mailRouter.get("/incoming", authorize, async (req, res, next) => {
     );
     res.send({ links: query.links("/incoming", total), incoming_mails });
   } catch (error) {
-    next(new APIError(error.message, 500));
+    next(new Error(error.message));
   }
 });
 
@@ -100,7 +92,7 @@ mailRouter.get("/outgoing", authorize, async (req, res, next) => {
 
     res.send({ links: query.links("/outgoing", total), outgoing_mails });
   } catch (error) {
-    next(new APIError(error.message, 500));
+    next(new Error(error.message));
   }
 });
 
@@ -120,7 +112,7 @@ mailRouter.get("/:id", authorize, async (req, res, next) => {
     }
   } catch (error) {
     console.log(error);
-    next(new APIError(error.message, 500));
+    next(new Error(error.message));
   }
 });
 
@@ -133,7 +125,7 @@ mailRouter.post(
       const newMail = await new mailModel(req.body).save();
       res.send(newMail._id);
     } catch (error) {
-      next(new APIError(error.message, 500));
+      next(new Error(error.message));
     }
   }
 );
@@ -201,7 +193,7 @@ mailRouter.put("/:id", authorize, checkAdmin, async (req, res, next) => {
       next(new APIError("Mail not found", 404));
     }
   } catch (error) {
-    next(new APIError(error.message, 500));
+    next(new Error(error.message));
   }
 });
 
@@ -216,7 +208,7 @@ mailRouter.put(
         res.send(trashMail);
       }
     } catch (error) {
-      next(new APIError(error.message, 500));
+      next(new Error(error.message));
     }
   }
 );
@@ -232,7 +224,7 @@ mailRouter.put(
         res.send(restoreMail);
       }
     } catch (error) {
-      next(new APIError(error.message, 500));
+      next(new Error(error.message));
     }
   }
 );
@@ -250,7 +242,7 @@ mailRouter.delete(
         next(new APIError("Mail not found", 404));
       }
     } catch (error) {
-      next(new APIError(error.message, 500));
+      next(new Error(error.message));
     }
   }
 );

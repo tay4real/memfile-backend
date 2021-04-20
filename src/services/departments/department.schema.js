@@ -35,18 +35,22 @@ DepartmentSchema.static("trashDept", async function (id) {
     },
   });
   if (mail) {
-    return "Department trashed successfully";
+    const alldepts = await DepartmentModel.find();
+    const depts = alldepts.filter((dept) => dept.status === 0);
+    return depts;
   }
 });
 
 DepartmentSchema.static("restoreDept", async function (id) {
-  const mail = await DepartmentModel.findByIdAndUpdate(id, {
+  const dept = await DepartmentModel.findByIdAndUpdate(id, {
     $set: {
       status: 0,
     },
   });
   if (mail) {
-    return "Department restored successfully";
+    const alldepts = await DepartmentModel.find();
+    const depts = alldepts.filter((dept) => dept.status === 0);
+    return depts;
   }
 });
 

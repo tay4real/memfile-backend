@@ -1,14 +1,10 @@
 const usersRouter = require("express").Router();
-
-const { authorize } = require("../../utils/middlewares");
-
-const { APIError } = require("../../utils");
-
-const { defaultAvatar } = require("../../utils/users");
+const { authorize } = require("../../utils/auth/middleware");
+const { defaultAvatar } = require("../../utils/defaultAvatar");
 const {
   cloudinaryAvatar,
   cloudinaryDestroy,
-} = require("../../utils/middlewares/cloudinary");
+} = require("../../utils/cloudinary");
 
 usersRouter
   .route("/me")
@@ -16,7 +12,7 @@ usersRouter
     try {
       res.send(req.user.toJSON());
     } catch (error) {
-      next(new APIError(error.message, 500));
+      next();
     }
   })
   .put(authorize, async (req, res, next) => {
@@ -26,7 +22,8 @@ usersRouter
       await req.user.save();
       res.send(req.user);
     } catch (error) {
-      next(new APIError(error.message, 500));
+      next(error);
+      //res.send({ error: true, message: error.message });
     }
   });
 
@@ -43,7 +40,7 @@ usersRouter
         await req.user.save();
         res.status(201).send(req.user);
       } catch (error) {
-        next(new APIError(error.message, 401));
+        next(error);
       }
     }
   )

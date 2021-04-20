@@ -4,10 +4,8 @@ const {
   checkAdmin,
   checkSuperUser,
   checkImplementationOfficer,
-} = require("../../utils/middlewares");
-const { APIError } = require("../../utils");
+} = require("../../utils/auth/middleware");
 const q2m = require("query-to-mongo");
-
 const filesModel = require("./files.schema");
 
 // list all files - [Accessible to all users]
@@ -26,7 +24,7 @@ fileRouter.get("/", authorize, async (req, res, next) => {
 
     res.send({ links: query.links("/files", total), files });
   } catch (error) {
-    next(new APIError(error.message, 500));
+    next(new Error(error.message));
   }
 });
 
@@ -47,7 +45,7 @@ fileRouter.get("/personalfiles", authorize, async (req, res, next) => {
     );
     res.send({ links: query.links("/personalfiles", total), personal_files });
   } catch (error) {
-    next(new APIError(error.message, 500));
+    next(new Error(error.message));
   }
 });
 
@@ -68,7 +66,7 @@ fileRouter.get("/generalfiles", authorize, async (req, res, next) => {
     );
     res.send({ links: query.links("/generalfiles", total), general_files });
   } catch (error) {
-    next(new APIError(error.message, 500));
+    next(new Error(error.message));
   }
 });
 
@@ -93,7 +91,7 @@ fileRouter.post(
 
       res.status(201).send(_id);
     } catch (error) {
-      next(new APIError(error.message, 500));
+      next(new Error(error.message));
     }
   }
 );
@@ -111,10 +109,10 @@ fileRouter.put(
       if (file) {
         res.send(file);
       } else {
-        next(new APIError("File not found", 404));
+        next(new Error("File not found"));
       }
     } catch (error) {
-      next(new APIError(error.message, 500));
+      next(new Error(error.message));
     }
   }
 );
@@ -132,10 +130,10 @@ fileRouter.put(
       if (file) {
         res.send(file);
       } else {
-        next(new APIError("File not found", 404));
+        next(new Error("File not found"));
       }
     } catch (error) {
-      next(new APIError(error.message, 500));
+      next(new Error(error.message));
     }
   }
 );
@@ -153,10 +151,10 @@ fileRouter.delete(
       if (file) {
         res.send(file);
       } else {
-        next(new APIError("File not found", 404));
+        next(new Error("File not found"));
       }
     } catch (error) {
-      next(new APIError(error.message, 500));
+      next(new Error(error.message));
     }
   }
 );
@@ -172,7 +170,7 @@ fileRouter.put(
         res.send(trashFile);
       }
     } catch (error) {
-      next(new APIError(error.message, 500));
+      next(new APIError(error.message));
     }
   }
 );
@@ -188,7 +186,7 @@ fileRouter.put(
         res.send(restoreFile);
       }
     } catch (error) {
-      next(new APIError(error.message, 500));
+      next(new Error(error.message));
     }
   }
 );
@@ -203,10 +201,10 @@ fileRouter.delete(
       if (file) {
         res.send("File record deleted successfully");
       } else {
-        next(new APIError("File not found", 404));
+        next(new Error("File not found"));
       }
     } catch (error) {
-      next(new APIError(error.message, 500));
+      next(new Error(error.message));
     }
   }
 );
