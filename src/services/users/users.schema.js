@@ -27,10 +27,11 @@ const UserSchema = new Schema(
       },
     },
     avatar: String,
+    post: String,
     role: {
       type: String,
-      enum: ["SuperAdmin", "Admin", "Officer", "ImplementationOfficer"],
-      default: "ImplementationOfficer",
+      enum: ["SuperAdmin", "Admin", "User"],
+      default: "User",
     },
     departments: { type: Schema.Types.ObjectId, ref: "departments" },
     files: [

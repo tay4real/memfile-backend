@@ -6,11 +6,7 @@ const DepartmentSchema = new Schema(
       type: String,
       required: [true, "Department Name is required"],
     },
-    dept_level: {
-      type: String,
-      enum: ["1", "2", "3"],
-      default: "3",
-    },
+
     status: {
       type: Number,
       enum: [0, 1],
@@ -27,37 +23,6 @@ DepartmentSchema.methods.toJSON = function () {
   delete deptObject.__v;
   return deptObject;
 };
-
-DepartmentSchema.static("trashDept", async function (id) {
-  const mail = await DepartmentModel.findByIdAndUpdate(id, {
-    $set: {
-      status: 1,
-    },
-  });
-  if (mail) {
-    const alldepts = await DepartmentModel.find();
-    const depts = alldepts.filter((dept) => dept.status === 0);
-    return depts;
-  }
-});
-
-DepartmentSchema.static("restoreDept", async function (id) {
-  const dept = await DepartmentModel.findByIdAndUpdate(id, {
-    $set: {
-      status: 0,
-    },
-  });
-  if (mail) {
-    const alldepts = await DepartmentModel.find();
-    const depts = alldepts.filter((dept) => dept.status === 0);
-    return depts;
-  }
-});
-
-DepartmentSchema.static("deleteDept", async function (id) {
-  const mail = await DepartmentModel.findByIdAndDelete(req.params.id);
-  return "Department deleted successfully";
-});
 
 const DepartmentModel = model("departments", DepartmentSchema);
 module.exports = DepartmentModel;

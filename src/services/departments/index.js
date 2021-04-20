@@ -52,22 +52,17 @@ deptRouter.get(
 );
 
 // add new department [access only to SuperUser]
-deptRouter.post(
-  "/add/new",
-  authorize,
-  checkSuperUser,
-  async (req, res, next) => {
-    try {
-      console.log(req.body);
-      const newDept = new deptModel(req.body);
-      const { _id } = await newDept.save();
+deptRouter.post("/", authorize, checkSuperUser, async (req, res, next) => {
+  try {
+    console.log(req.body);
+    const newDept = new deptModel(req.body);
+    const { _id } = await newDept.save();
 
-      res.status(201).send(newDept);
-    } catch (error) {
-      next(new Error(error.message));
-    }
+    res.status(201).send(newDept);
+  } catch (error) {
+    next(new Error(error.message));
   }
-);
+});
 
 // edit department [ accesible only to SuperUser]
 deptRouter.put("/:id", authorize, checkSuperUser, async (req, res, next) => {
@@ -86,45 +81,13 @@ deptRouter.put("/:id", authorize, checkSuperUser, async (req, res, next) => {
   }
 });
 
-deptRouter.put(
-  "/trash/:id",
-  authorize,
-  checkSuperUser,
-  async (req, res, next) => {
-    try {
-      const trashDept = await deptModel.trashDept(req.params.id);
-      if (trashDept) {
-        res.send(trashDept);
-      }
-    } catch (error) {
-      next(new Error(error.message));
-    }
-  }
-);
-
-deptRouter.put(
-  "/restore/:id",
-  authorize,
-  checkSuperUser,
-  async (req, res, next) => {
-    try {
-      const restoreDept = await deptModel.restoreDept(req.params.id);
-      if (restoreDept) {
-        res.send(restoreDept);
-      }
-    } catch (error) {
-      next(new Error(error.message));
-    }
-  }
-);
-
 deptRouter.delete(
   "/delete/:id",
   authorize,
   checkSuperUser,
   async (req, res, next) => {
     try {
-      const dept = await deptModel.deleteDept(req.params.id);
+      const dept = await deptModel.findByIdAndDelete(req.params.id);
       if (dept) {
         res.send("Deleted");
       } else {
