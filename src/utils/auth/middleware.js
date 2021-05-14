@@ -30,44 +30,45 @@ const authorize = async (req, res, next) => {
   }
 };
 
-const checkSuperUser = async (req, res, next) => {
-  if (req.role && req.role === "SuperAdmin") next();
-  else {
-    next(res.status(403).send("Access denied. Only for Super Admins!"));
-  }
-};
-
-const checkAdmin = async (req, res, next) => {
+const isAdmin = async (req, res, next) => {
   if (req.role && req.role === "Admin") next();
   else {
-    const err = new Error("Access denied. Only for Admins!");
-    err.httpStatusCode = 403;
-    next(err);
+    next(res.status(403).send("Unauthorized access"));
+  }
+};
+const isChairman = async (req, res, next) => {
+  if (req.role && req.role === "Chairman") next();
+  else {
+    next(res.status(403).send("Unauthorized access"));
   }
 };
 
-const checkOfficer = async (req, res, next) => {
-  if (req.role && req.role === "Officer") next();
+const isPermanentSecretary = async (req, res, next) => {
+  if (req.role && req.role === "Permanent Secretary") next();
   else {
-    const err = new Error("Access denied. Only for Officers!");
-    err.httpStatusCode = 403;
-    next(err);
+    next(res.status(403).send("Unauthorized access"));
   }
 };
 
-const checkImplementationOfficer = async (req, res, next) => {
-  if (req.role && req.role === "ImplementationOfficer") next();
+const isDirector = async (req, res, next) => {
+  if (req.role && req.role === "Director") next();
   else {
-    const err = new Error("Access denied. Only for Implementaion Officers!");
-    err.httpStatusCode = 403;
-    next(err);
+    next(res.status(403).send("Unauthorized access"));
+  }
+};
+
+const isRegistryOfficer = async (req, res, next) => {
+  if (req.role && req.role === "Registry Officer") next();
+  else {
+    next(res.status(403).send("Unauthorized access"));
   }
 };
 
 module.exports = {
   authorize,
-  checkSuperUser,
-  checkAdmin,
-  checkOfficer,
-  checkImplementationOfficer,
+  isAdmin,
+  isChairman,
+  isPermanentSecretary,
+  isDirector,
+  isRegistryOfficer,
 };

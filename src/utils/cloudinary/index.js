@@ -11,21 +11,66 @@ cloudinary.config({
 const avatarStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: "e-filing/avatars",
+    folder: "memfile/avatars",
   },
   limits: { fileSize: 200000 },
 });
 
-const mailStorage = new CloudinaryStorage({
+const incomingMailStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: "e-filing/mails",
+    folder: "memfile/incoming-mails",
   },
   limits: { fileSize: 5000000 },
 });
 
-const cloudinaryMail = multer({ storage: mailStorage });
+const outgoingMailStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "memfile/outgoing-mails",
+  },
+  limits: { fileSize: 5000000 },
+});
+
+const leaveStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "memfile/leaves",
+  },
+  limits: { fileSize: 5000000 },
+});
+
+const qualificationsStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "memfile/qualifications",
+  },
+  limits: { fileSize: 5000000 },
+});
+
+const staffQueryStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "memfile/staffqueries",
+  },
+  limits: { fileSize: 5000000 },
+});
+
+const promotionStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "memfile/staffpromotions",
+  },
+  limits: { fileSize: 5000000 },
+});
+
 const cloudinaryAvatar = multer({ storage: avatarStorage });
+const cloudinaryIncomingMail = multer({ storage: incomingMailStorage });
+const cloudinaryOutgoingMail = multer({ storage: outgoingMailStorage });
+const cloudinaryLeaves = multer({ storage: leaveStorage });
+const cloudinaryQualifications = multer({ storage: qualificationsStorage });
+const cloudinaryQueries = multer({ storage: staffQueryStorage });
+const cloudinaryPromotions = multer({ storage: promotionStorage });
 
 const cloudinaryDestroy = async (data) => {
   console.log("old pic", data);
@@ -37,4 +82,14 @@ const cloudinaryDestroy = async (data) => {
     else return res;
   });
 };
-module.exports = { cloudinaryMail, cloudinaryAvatar, cloudinaryDestroy };
+
+module.exports = {
+  cloudinaryAvatar,
+  cloudinaryIncomingMail,
+  cloudinaryOutgoingMail,
+  cloudinaryLeaves,
+  cloudinaryPromotions,
+  cloudinaryQualifications,
+  cloudinaryQueries,
+  cloudinaryDestroy,
+};

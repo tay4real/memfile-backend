@@ -6,8 +6,7 @@ const DepartmentSchema = new Schema(
       type: String,
       required: [true, "Department Name is required"],
     },
-    description: String,
-    status: Boolean,
+    code: String,
   },
   { timestamps: true, virtuals: true }
 );

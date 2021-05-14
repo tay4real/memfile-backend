@@ -4,15 +4,15 @@ const UserModel = require("../users/users.schema");
 const FileModel = require("../files/files.schema");
 const {
   authorize,
-  checkImplementationOfficer,
-  checkAdmin,
-  checkSuperUser,
+  isRegistryOfficer,
+  isPermanentSecretary,
+  isAdmin,
 } = require("../../utils/auth/middleware");
 
 filemovementRouter.put(
   "/:user_id/requestfile/:file_id",
   authorize,
-  checkSuperUser || checkAdmin || checkImplementationOfficer,
+  isAdmin || isPermanentSecretary || isRegistryOfficer,
   async (req, res, next) => {
     try {
       const user_id = req.params.userid;
@@ -65,7 +65,7 @@ filemovementRouter.put(
 filemovementRouter.put(
   "/:user_id/moveFile/:file_id",
   authorize,
-  checkSuperUser || checkAdmin || checkImplementationOfficer,
+  isAdmin || isPermanentSecretary || isRegistryOfficer,
   async (req, res, next) => {
     const user_from_id = req.params.user_id;
     const user_to_id = req.body.user_to_id;
@@ -142,7 +142,7 @@ filemovementRouter.put(
 filemovementRouter.put(
   "/:userid/returnFile/:file_id",
   authorize,
-  checkSuperUser || checkAdmin || checkImplementationOfficer,
+  isAdmin || isPermanentSecretary || isRegistryOfficer,
   async (req, res, next) => {
     const user_id = req.params.user_id;
     const file_id = req.params.file_id;

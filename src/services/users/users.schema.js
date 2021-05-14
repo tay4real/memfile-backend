@@ -4,10 +4,7 @@ const { defaultAvatar } = require("../../utils/defaultAvatar");
 
 const UserSchema = new Schema(
   {
-    firstname: { type: String, required: [true, "First name is required"] },
-    surname: { type: String, required: [true, "Surname is required"] },
     username: String,
-    password: { type: String, required: [true, "Password is required"] },
     email: {
       type: String,
       unique: true,
@@ -26,24 +23,23 @@ const UserSchema = new Schema(
         message: "email is taken",
       },
     },
+    password: { type: String, required: [true, "Password is required"] },
+    surname: { type: String, required: [true, "Surname is required"] },
+    firstname: { type: String, required: [true, "First name is required"] },
     avatar: String,
-    post: String,
     role: {
       type: String,
-      enum: ["SuperAdmin", "Admin", "User"],
-      default: "User",
+      enum: [
+        "Admin",
+        "Chairman",
+        "Permanent Secretary",
+        "Director",
+        "Registry Officer",
+      ],
+      default: "Registry Officer",
     },
-    departments: { type: Schema.Types.ObjectId, ref: "departments" },
-    files: [
-      {
-        file_code: String,
-        file_no: String,
-        file_title: String,
-        file_type: String,
-        file_content: [],
-        date: Date,
-      },
-    ],
+    mda: { type: Schema.Types.ObjectId, ref: "departments" },
+    department: { type: Schema.Types.ObjectId, ref: "departments" },
     status: {
       type: Number,
       enum: [0, 1],
@@ -79,7 +75,7 @@ UserSchema.statics.findByCredentials = async function (email, password) {
   }
 };
 
-UserSchema.static("trashUser", async function (id) {
+UserSchema.static("deactivate", async function (id) {
   const user = await UserModel.findByIdAndUpdate(id, {
     $set: {
       status: 1,
@@ -90,7 +86,7 @@ UserSchema.static("trashUser", async function (id) {
   }
 });
 
-UserSchema.static("restoreUser", async function (id) {
+UserSchema.static("activate", async function (id) {
   const user = await UserModel.findByIdAndUpdate(id, {
     $set: {
       status: 0,
@@ -99,11 +95,6 @@ UserSchema.static("restoreUser", async function (id) {
   if (user) {
     return "User account reactivated";
   }
-});
-
-UserSchema.static("deleteUser", async function (id) {
-  const user = await UserModel.findByIdAndDelete(req.params.id);
-  return "User Deleted";
 });
 
 UserSchema.pre("save", async function (next) {

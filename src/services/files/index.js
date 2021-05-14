@@ -1,9 +1,9 @@
 const fileRouter = require("express").Router();
 const {
   authorize,
-  checkAdmin,
-  checkSuperUser,
-  checkImplementationOfficer,
+  isPermanentSecretary,
+  isAdmin,
+  isRegistryOfficer,
 } = require("../../utils/auth/middleware");
 const q2m = require("query-to-mongo");
 const filesModel = require("./files.schema");
@@ -86,7 +86,7 @@ fileRouter.get("/:id", authorize, async (req, res, next) => {
 fileRouter.post(
   "/newfile",
   authorize,
-  checkSuperUser || checkAdmin || checkImplementationOfficer,
+  isAdmin || isPermanentSecretary || isRegistryOfficer,
   async (req, res, next) => {
     try {
       const newFile = new filesModel(req.body);
@@ -102,7 +102,7 @@ fileRouter.post(
 fileRouter.put(
   "/:id",
   authorize,
-  checkSuperUser || checkAdmin || checkImplementationOfficer,
+  isAdmin || isPermanentSecretary || isRegistryOfficer,
   async (req, res, next) => {
     try {
       const file = await filesModel.findByIdAndUpdate(req.params.id, req.body, {
@@ -123,7 +123,7 @@ fileRouter.put(
 fileRouter.put(
   "/:id/fileup/:mailid",
   authorize,
-  checkSuperUser || checkAdmin || checkImplementationOfficer,
+  isAdmin || isPermanentSecretary || isRegistryOfficer,
   async (req, res, next) => {
     try {
       const file = await filesModel.fileupDocument(
@@ -144,7 +144,7 @@ fileRouter.put(
 fileRouter.delete(
   "/:id/remove/:mailid",
   authorize,
-  checkSuperUser || checkAdmin || checkImplementationOfficer,
+  isAdmin || isPermanentSecretary || isRegistryOfficer,
   async (req, res, next) => {
     try {
       const file = await filesModel.removeDocument(
@@ -194,22 +194,17 @@ fileRouter.put(
   }
 );
 
-fileRouter.delete(
-  "/delete/:id",
-  authorize,
-  checkSuperUser,
-  async (req, res, next) => {
-    try {
-      const file = await filesModel.deleteFile(req.params.id);
-      if (file) {
-        res.send("File record deleted successfully");
-      } else {
-        next(new Error("File not found"));
-      }
-    } catch (error) {
-      next(new Error(error.message));
+fileRouter.delete("/delete/:id", authorize, isAdmin, async (req, res, next) => {
+  try {
+    const file = await filesModel.deleteFile(req.params.id);
+    if (file) {
+      res.send("File record deleted successfully");
+    } else {
+      next(new Error("File not found"));
     }
+  } catch (error) {
+    next(new Error(error.message));
   }
-);
+});
 
 module.exports = fileRouter;

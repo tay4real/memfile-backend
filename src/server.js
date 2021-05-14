@@ -40,7 +40,7 @@ console.log(listEndpoints(server));
 const port = process.env.PORT || 5000;
 
 mongoose
-  .connect(process.env.MONGO_CONNECTION, {
+  .connect(`${process.env.MONGO_CONNECTION2}\memfile`, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
     useCreateIndex: true,
