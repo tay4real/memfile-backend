@@ -4,7 +4,6 @@ const { defaultAvatar } = require("../../utils/defaultAvatar");
 
 const UserSchema = new Schema(
   {
-    username: String,
     email: {
       type: String,
       unique: true,
@@ -14,14 +13,14 @@ const UserSchema = new Schema(
         /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
         "Please fill a valid email address",
       ],
-      validate: {
-        validator: async function (email) {
-          const user = await this.constructor.findOne({ email });
-          if (user && user.email === this.email) return true;
-          return !user ? true : false;
-        },
-        message: "email is taken",
-      },
+      // validate: {
+      //   validator: async function (email) {
+      //     const user = await this.findOne({ email });
+      //     if (user && user.email === this.email) return true;
+      //     return !user ? true : false;
+      //   },
+      //   message: "email is taken",
+      // },
     },
     password: { type: String, required: [true, "Password is required"] },
     surname: { type: String, required: [true, "Surname is required"] },
@@ -38,8 +37,8 @@ const UserSchema = new Schema(
       ],
       default: "Registry Officer",
     },
-    mda: { type: Schema.Types.ObjectId, ref: "departments" },
-    department: { type: Schema.Types.ObjectId, ref: "departments" },
+    mda: String,
+    department: String,
     status: {
       type: Number,
       enum: [0, 1],

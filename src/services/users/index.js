@@ -6,6 +6,7 @@ const {
   cloudinaryAvatar,
   cloudinaryDestroy,
 } = require("../../utils/cloudinary");
+const UserModel = require("../users/users.schema");
 
 usersRouter
   .route("/me")
@@ -30,21 +31,17 @@ usersRouter
 
 usersRouter
   .route("/me/avatar")
-  .post(
-    authorize,
-    cloudinaryAvatar.single("avatar"),
-    async (req, res, next) => {
-      try {
-        const data = parse(req.user.avatar);
-        if (data.name) await cloudinaryDestroy(data);
-        req.user.avatar = req.file.path;
-        await req.user.save();
-        res.status(201).send(req.user);
-      } catch (error) {
-        next(error);
-      }
+  .put(authorize, cloudinaryAvatar.single("avatar"), async (req, res, next) => {
+    try {
+      const data = parse(req.user.avatar);
+      if (data.name) await cloudinaryDestroy(data);
+      req.user.avatar = req.file.path;
+      await req.user.save();
+      res.status(201).send(req.user);
+    } catch (error) {
+      next(error);
     }
-  )
+  })
   .delete(authorize, async (req, res, next) => {
     try {
       const data = parse(req.user.avatar);
@@ -66,9 +63,7 @@ usersRouter.get("/", authorize, isAdmin, async (req, res, next) => {
       .find(query.criteria)
       .sort(query.options.sort)
       .skip(query.options.skip)
-      .limit(query.options.limit)
-      .populate("mdas")
-      .populate("departments");
+      .limit(query.options.limit);
 
     res.send(users);
   } catch (error) {
@@ -107,6 +102,7 @@ usersRouter.put("/:id", authorize, isAdmin, async (req, res, next) => {
     );
     if (modifiedUser) {
       res.send(modifiedUser);
+      console.log(modifiedUser);
     } else {
       next();
     }
@@ -132,21 +128,16 @@ usersRouter.put(
   }
 );
 
-usersRouter.put(
-  "/activate/:id",
-  authorize,
-  isAdmin,
-  async (req, res, next) => {
-    try {
-      const status = await UserModel.activate(req.params.id);
-      if (status) {
-        res.send(status);
-      }
-    } catch (error) {
-      next(new Error(error.message));
+usersRouter.put("/activate/:id", authorize, isAdmin, async (req, res, next) => {
+  try {
+    const status = await UserModel.activate(req.params.id);
+    if (status) {
+      res.send(status);
     }
+  } catch (error) {
+    next(new Error(error.message));
   }
-);
+});
 
 usersRouter.delete("/:id", authorize, isAdmin, async (req, res, next) => {
   try {

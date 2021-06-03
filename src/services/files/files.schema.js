@@ -2,17 +2,14 @@ const { Schema, model } = require("mongoose");
 
 const FilesSchema = new Schema(
   {
-    file_code: {
-      type: String,
-      required: [true, "File code is required"],
-    },
-    file_no: String,
     file_title: String,
+    file_no: String,
     file_type: {
       type: String,
       enum: ["Personal File", "General File"],
       default: "General File",
     },
+    mdaShortName: String,
     mails: [{ type: Schema.Types.ObjectId, ref: "mails" }],
     status: {
       type: Number,

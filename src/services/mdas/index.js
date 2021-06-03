@@ -2,6 +2,7 @@ const mdaRouter = require("express").Router();
 const { authorize, isAdmin } = require("../../utils/auth/middleware");
 const q2m = require("query-to-mongo");
 const MDAModel = require("./mda.schema");
+const mongoose = require("mongoose");
 
 // List all MDAS
 mdaRouter.get("/", authorize, async (req, res, next) => {
@@ -13,7 +14,7 @@ mdaRouter.get("/", authorize, async (req, res, next) => {
       .skip(query.options.skip)
       .limit(query.options.limit);
 
-    res.send({ links: query.links("/mdas", total), mdas });
+    res.send(mdas);
   } catch (error) {
     next(new Error(error.message));
   }
@@ -22,7 +23,7 @@ mdaRouter.get("/", authorize, async (req, res, next) => {
 // Returns an MDA
 mdaRouter.get("/:id", authorize, async (req, res, next) => {
   try {
-    const mda = await MDAModel.findById(id).populate("departments");
+    const mda = await MDAModel.findById(req.params.id);
     res.send(mda);
   } catch (error) {
     next(new Error(error.message));
@@ -104,7 +105,7 @@ mdaRouter.delete("/", authorize, isAdmin, async (req, res, next) => {
 mdaRouter.post("/:id/departments/", async (req, res, next) => {
   try {
     const department = { ...req.body };
-    const updated = await personnelModel.findByIdAndUpdate(
+    const updated = await MDAModel.findByIdAndUpdate(
       req.params.id,
       {
         $push: {
@@ -119,9 +120,9 @@ mdaRouter.post("/:id/departments/", async (req, res, next) => {
   }
 });
 
-mdaRouter.get("/:id/departments/", async (req, res, next) => {
+mdaRouter.get("/:id/departments", async (req, res, next) => {
   try {
-    const { departments } = await personnelModel.findById(req.params.id, {
+    const { departments } = await MDAModel.findById(req.params.id, {
       departments: 1,
       _id: 0,
     });
@@ -137,7 +138,7 @@ mdaRouter.put(
 
   async (req, res, next) => {
     try {
-      const { departments } = await personnelModel.findOne(
+      const { departments } = await MDAModel.findOne(
         {
           _id: mongoose.Types.ObjectId(req.params.id),
         },
@@ -157,7 +158,7 @@ mdaRouter.put(
           ...req.body,
         };
 
-        const modifiedDepartments = await personnelModel.findOneAndUpdate(
+        const modifiedDepartments = await MDAModel.findOneAndUpdate(
           {
             _id: mongoose.Types.ObjectId(req.params.id),
             "departments._id": mongoose.Types.ObjectId(req.params.departmentId),
@@ -181,7 +182,7 @@ mdaRouter.put(
 
 mdaRouter.delete("/:id/departments/:departmentId", async (req, res, next) => {
   try {
-    const modifiedDepartments = await personnelModel.findByIdAndUpdate(
+    const modifiedDepartments = await MDAModel.findByIdAndUpdate(
       req.params.id,
       {
         $pull: {
@@ -194,7 +195,9 @@ mdaRouter.delete("/:id/departments/:departmentId", async (req, res, next) => {
         new: true,
       }
     );
-    res.send(modifiedDepartments);
+    if (modifiedDepartments) {
+      res.send("Deleted Successfully");
+    }
   } catch (error) {
     console.log(error);
     next(error);

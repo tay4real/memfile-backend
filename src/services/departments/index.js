@@ -1,96 +1,108 @@
-const deptRouter = require("express").Router();
+const mdaRouter = require("express").Router();
 const { authorize, isAdmin } = require("../../utils/auth/middleware");
 const q2m = require("query-to-mongo");
-const deptModel = require("./department.schema");
+const MDAModel = require("../mdas/mda.schema");
 
-deptRouter.get("/", authorize, isAdmin, async (req, res, next) => {
+mdaRouter.post("/:id/departments/", async (req, res, next) => {
   try {
-    const query = q2m(req.query);
-
-    const depts = await deptModel
-      .find(query.criteria)
-      .sort(query.options.sort)
-      .skip(query.options.skip)
-      .limit(query.options.limit);
-
-    res.send(depts);
-  } catch (error) {
-    next(new Error(error.message));
-  }
-});
-
-deptRouter.get("/:id", authorize, isAdmin, async (req, res, next) => {
-  try {
-    const id = req.params.id;
-    const dept = await deptModel.findById(id);
-    if (dept) {
-      res.send(dept);
-    } else {
-      next(new APIError("Department not found", 404));
-    }
-  } catch (error) {
-    next(new Error(error.message));
-  }
-});
-
-deptRouter.post("/", authorize, isAdmin, async (req, res, next) => {
-  try {
-    console.log(req.body);
-    const newDept = new deptModel(req.body);
-    const { _id } = await newDept.save();
-    res.status(201).send(_id);
-  } catch (error) {
-    next(new Error(error.message));
-  }
-});
-
-deptRouter.put("/:id", authorize, isAdmin, async (req, res, next) => {
-  try {
-    const dept = await deptModel.findByIdAndUpdate(req.params.id, req.body, {
-      runValidators: true,
-      new: true,
-    });
-    if (dept) {
-      res.send(dept);
-    } else {
-      next(new Error("Department not found", 404));
-    }
-  } catch (error) {
-    next(new Error(error.message));
-  }
-});
-
-deptRouter.delete("/:id", authorize, isAdmin, async (req, res, next) => {
-  try {
-    const dept = await deptModel.findByIdAndDelete(req.params.id);
-    if (dept) {
-      res.send("Deleted Sucessfully");
-    } else {
-      next();
-    }
-  } catch (error) {
-    next(new Error(error.message));
-  }
-});
-
-deptRouter.delete("/", authorize, isAdmin, async (req, res, next) => {
-  try {
-    const data = await deptModel.deleteMany({});
-    if (data) {
-      res.send({
-        message: `${data.deletedCount} departments were deleted successfully!`,
-      });
-    } else {
-      next();
-    }
-  } catch (error) {
-    next(
-      new Error({
-        message:
-          err.message || "Some error occurred while removing all departments.",
-      })
+    const department = { ...req.body };
+    const updated = await MDAModel.findByIdAndUpdate(
+      req.params.id,
+      {
+        $push: {
+          departments: department,
+        },
+      },
+      { runValidators: true, new: true }
     );
+    res.status(201).send(updated);
+  } catch (error) {
+    next(error);
   }
 });
 
-module.exports = deptRouter;
+mdaRouter.get("/:id/departments", async (req, res, next) => {
+  try {
+    const { departments } = await MDAModel.findById(req.params.id, {
+      departments: 1,
+      _id: 0,
+    });
+    res.send(departments);
+  } catch (error) {
+    console.log(error);
+    next(error);
+  }
+});
+
+mdaRouter.put(
+  "/:id/departments/:departmentId",
+
+  async (req, res, next) => {
+    try {
+      const { departments } = await MDAModel.findOne(
+        {
+          _id: mongoose.Types.ObjectId(req.params.id),
+        },
+        {
+          _id: 0,
+          departments: {
+            $elemMatch: {
+              _id: mongoose.Types.ObjectId(req.params.departmentId),
+            },
+          },
+        }
+      );
+
+      if (departments && departments.length > 0) {
+        const departmentToReplace = {
+          ...departments[0].toObject(),
+          ...req.body,
+        };
+
+        const modifiedDepartments = await MDAModel.findOneAndUpdate(
+          {
+            _id: mongoose.Types.ObjectId(req.params.id),
+            "departments._id": mongoose.Types.ObjectId(req.params.departmentId),
+          },
+          { $set: { "departments.$": departmentToReplace } },
+          {
+            runValidators: true,
+            new: true,
+          }
+        );
+        res.send(modifiedDepartments);
+      } else {
+        next();
+      }
+    } catch (error) {
+      console.log(error);
+      next(error);
+    }
+  }
+);
+
+mdaRouter.delete("/:id/departments/:departmentId", async (req, res, next) => {
+  try {
+    const modifiedDepartments = await personnelModel.findByIdAndUpdate(
+      req.params.id,
+      {
+        $pull: {
+          departments: {
+            _id: mongoose.Types.ObjectId(req.params.departmentId),
+          },
+        },
+      },
+      {
+        new: true,
+      }
+    );
+    if (modifiedDepartments) {
+      res.send("Deleted Successfully");
+    }
+  } catch (error) {
+    console.log(error);
+    next(error);
+  }
+});
+
+module.exports = mdaRouter;

@@ -6,8 +6,11 @@ const MDASchema = new Schema(
     shortName: String,
     departments: [
       {
-        deptName: String,
-        shortName: String,
+        deptName: {
+          type: String,
+          required: [true, "Department Name is required"],
+        },
+        deptShortName: String,
       },
     ],
   },

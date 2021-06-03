@@ -17,12 +17,11 @@ fileRouter.get("/", authorize, async (req, res, next) => {
       .find(query.criteria)
       .sort(query.options.sort)
       .skip(query.options.skip)
-      .limit(query.options.limit)
-      .populate("mails");
+      .limit(query.options.limit);
 
     const files = allfiles.filter((file) => file.status === 0);
 
-    res.send({ links: query.links("/files", total), files });
+    res.send(files);
   } catch (error) {
     next(new Error(error.message));
   }
@@ -43,10 +42,7 @@ fileRouter.get("/personalfiles", authorize, async (req, res, next) => {
     const personal_files = files.filter(
       (file) => file.status === 0 && file.file_type === "Personal File"
     );
-    res.send({
-      links: query.links("/personalfiles", total),
-      personal_files,
-    });
+    res.send(personal_files);
   } catch (error) {
     next(new Error(error.message));
   }
@@ -67,7 +63,7 @@ fileRouter.get("/generalfiles", authorize, async (req, res, next) => {
     const general_files = files.filter(
       (file) => file.status === 0 && file.file_type === "General File"
     );
-    res.send({ links: query.links("/generalfiles", total), general_files });
+    res.send(general_files);
   } catch (error) {
     next(new Error(error.message));
   }
@@ -89,10 +85,21 @@ fileRouter.post(
   isAdmin || isPermanentSecretary || isRegistryOfficer,
   async (req, res, next) => {
     try {
-      const newFile = new filesModel(req.body);
-      const { _id } = await newFile.save();
+      // check if File title already exist for a particular MDA entry
+      const file = filesModel.find({
+        mdaShortName: req.body.mdaShortName,
+        file_title: req.body.file_title,
+      });
 
-      res.status(201).send(_id);
+      console.log();
+
+      if ((await file).length === 0) {
+        const newFile = new filesModel(req.body);
+        const { _id } = await newFile.save();
+        res.status(201).send(_id);
+      } else {
+        next(new Error("File Title already exist"));
+      }
     } catch (error) {
       next(new Error(error.message));
     }

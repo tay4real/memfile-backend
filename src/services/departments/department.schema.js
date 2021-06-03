@@ -2,11 +2,11 @@ const { Schema, model } = require("mongoose");
 
 const DepartmentSchema = new Schema(
   {
-    dept_name: {
+    deptName: {
       type: String,
       required: [true, "Department Name is required"],
     },
-    code: String,
+    deptShortName: String,
   },
   { timestamps: true, virtuals: true }
 );
