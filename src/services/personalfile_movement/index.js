@@ -1,7 +1,7 @@
 const filemovementRouter = require("express").Router();
 
 const UserModel = require("../users/users.schema");
-const FileModel = require("../files/files.schema");
+const FileModel = require("../personal-files/personal-files.schema");
 const {
   authorize,
   isRegistryOfficer,

@@ -6,7 +6,7 @@ const {
   isRegistryOfficer,
 } = require("../../utils/auth/middleware");
 const q2m = require("query-to-mongo");
-const filesModel = require("./files.schema");
+const filesModel = require("./general-files.schema");
 
 // list all files - [Accessible to all users]
 fileRouter.get("/", authorize, async (req, res, next) => {
@@ -19,51 +19,7 @@ fileRouter.get("/", authorize, async (req, res, next) => {
       .skip(query.options.skip)
       .limit(query.options.limit);
 
-    const files = allfiles.filter((file) => file.status === 0);
-
-    res.send(files);
-  } catch (error) {
-    next(new Error(error.message));
-  }
-});
-
-// list all personal files - [Accessible to all users]
-fileRouter.get("/personalfiles", authorize, async (req, res, next) => {
-  try {
-    const query = q2m(req.query);
-    const total = await filesModel.countDocuments(query.criteria);
-    const files = await filesModel
-      .find(query.criteria)
-      .sort(query.options.sort)
-      .skip(query.options.skip)
-      .limit(query.options.limit)
-      .populate("authors");
-
-    const personal_files = files.filter(
-      (file) => file.status === 0 && file.file_type === "Personal File"
-    );
-    res.send(personal_files);
-  } catch (error) {
-    next(new Error(error.message));
-  }
-});
-
-// list all general files - [Accessible to all users]
-fileRouter.get("/generalfiles", authorize, async (req, res, next) => {
-  try {
-    const query = q2m(req.query);
-    const total = await filesModel.countDocuments(query.criteria);
-    const files = await filesModel
-      .find(query.criteria)
-      .sort(query.options.sort)
-      .skip(query.options.skip)
-      .limit(query.options.limit)
-      .populate("authors");
-
-    const general_files = files.filter(
-      (file) => file.status === 0 && file.file_type === "General File"
-    );
-    res.send(general_files);
+    res.send(allfiles);
   } catch (error) {
     next(new Error(error.message));
   }
@@ -96,12 +52,14 @@ fileRouter.post(
       if ((await file).length === 0) {
         const newFile = new filesModel(req.body);
         const { _id } = await newFile.save();
-        res.status(201).send(_id);
+        if (_id) {
+          res.status(201).send("File created successfully");
+        }
       } else {
-        next(new Error("File Title already exist"));
+        res.status(400).send("File Title already exist");
       }
     } catch (error) {
-      next(new Error(error.message));
+      res.status(500).send(error.message);
     }
   }
 );
@@ -117,9 +75,9 @@ fileRouter.put(
         new: true,
       });
       if (file) {
-        res.send(file);
+        res.send("File updated sucessfully");
       } else {
-        next(new Error("File not found"));
+        res.status(400).send("File not found");
       }
     } catch (error) {
       next(new Error(error.message));
@@ -138,7 +96,7 @@ fileRouter.put(
         req.params.mailid
       );
       if (file) {
-        res.send(file);
+        res.send("Document added to file successfully");
       } else {
         next(new Error("File not found"));
       }
@@ -159,7 +117,7 @@ fileRouter.delete(
         req.params.mailid
       );
       if (file) {
-        res.send(file);
+        res.send("Document removed from file successfully");
       } else {
         next(new Error("File not found"));
       }

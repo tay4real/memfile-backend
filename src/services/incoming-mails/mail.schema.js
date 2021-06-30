@@ -4,16 +4,16 @@ const MailSchema = new Schema(
   {
     ref_no: String,
     subject: String,
-    from: String,
-    author: String,
+    sender: String,
     recipient: String,
+    dispatcher: String,
     date_received: Date,
+
     status: {
       type: Number,
       enum: [0, 1],
       default: 0,
     },
-    upload_format: String,
     upload_url: [String],
   },
   { timestamps: true, virtuals: true }

@@ -4,13 +4,8 @@ const FilesSchema = new Schema(
   {
     file_title: String,
     file_no: String,
-    file_type: {
-      type: String,
-      enum: ["Personal File", "General File"],
-      default: "General File",
-    },
     mdaShortName: String,
-    mails: [{ type: Schema.Types.ObjectId, ref: "mails" }],
+    personnels: [{ type: Schema.Types.ObjectId, ref: "personnels" }],
     status: {
       type: Number,
       enum: [0, 1],
@@ -122,5 +117,5 @@ FilesSchema.static("deleteFile", async function (id) {
   return "File deleted permanently";
 });
 
-const FileModel = model("files", FilesSchema);
+const FileModel = model("personalfiles", FilesSchema);
 module.exports = FileModel;

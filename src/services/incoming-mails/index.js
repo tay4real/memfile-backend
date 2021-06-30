@@ -33,7 +33,7 @@ mailRouter.get("/:id", authorize, async (req, res, next) => {
     const mail = await mailModel.findById(req.params.id);
     res.send(mail);
   } catch (error) {
-    next(new Error(error.message));
+    next(res.status(500).send(error.message));
   }
 });
 
@@ -42,7 +42,7 @@ mailRouter.post("/", authorize, async (req, res, next) => {
     const newMail = await new mailModel(req.body).save();
     res.send(newMail._id);
   } catch (error) {
-    next(new Error(error.message));
+    next(res.status(500).send(error.message));
   }
 });
 
@@ -76,7 +76,7 @@ mailRouter.put("/:id", authorize, async (req, res, next) => {
       new: true,
     });
     if (mail) {
-      res.send(mail);
+      res.send("Incoming mail updated successfully");
     } else {
       next(new APIError("Mail not found", 404));
     }
@@ -113,27 +113,32 @@ mailRouter.get("/:id/pdf", async (req, res, next) => {
   }
 });
 
-mailRouter.put("/fileup/:id", authorize, isAdmin, async (req, res, next) => {
-  try {
-    const status = await mailModel.fileup(req.params.id);
-    if (status) {
-      res.send(status);
+mailRouter.put(
+  "/changestatus/:id",
+  authorize,
+  isAdmin,
+  async (req, res, next) => {
+    try {
+      const status = await mailModel.fileup(req.params.id);
+      if (status) {
+        res.send(status);
+      }
+    } catch (error) {
+      next(new Error(error.message));
     }
-  } catch (error) {
-    next(new Error(error.message));
   }
-});
+);
 
 mailRouter.delete("/:id", authorize, isAdmin, async (req, res, next) => {
   try {
-    const mail = await MailModel.findByIdAndDelete(req.params.id);
+    const mail = await mailModel.findByIdAndDelete(req.params.id);
     if (mail) {
-      res.send("Delete successful");
+      res.send("Deleted successfully");
     } else {
-      next(new APIError("Mail not found", 404));
+      res.status(404).send("Mail Not found");
     }
   } catch (error) {
-    next(new Error(error.message));
+    res.status(500).send(error.message);
   }
 });
 

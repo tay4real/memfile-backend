@@ -45,7 +45,7 @@ mdaRouter.post("/", authorize, isAdmin, async (req, res, next) => {
       const id = mda._id;
       console.log(id);
       if (id) {
-        res.status(201).send(mda);
+        res.status(201).send("MDA added successfully");
       }
     }
   } catch (error) {
@@ -60,7 +60,7 @@ mdaRouter.put("/:id", authorize, isAdmin, async (req, res, next) => {
       new: true,
     });
     if (mda) {
-      res.send(mda);
+      res.status(201).send("MDA updated successfully");
     } else {
       next(new Error("MDA not found"));
     }
@@ -105,27 +105,68 @@ mdaRouter.delete("/", authorize, isAdmin, async (req, res, next) => {
 mdaRouter.post("/:id/departments/", async (req, res, next) => {
   try {
     const department = { ...req.body };
-    const updated = await MDAModel.findByIdAndUpdate(
-      req.params.id,
+
+    const { departments } = await MDAModel.findOne(
       {
-        $push: {
-          departments: department,
-        },
+        _id: mongoose.Types.ObjectId(req.params.id),
       },
-      { runValidators: true, new: true }
+      {
+        _id: 0,
+        departments: {
+          $elemMatch: {
+            deptName: department.deptName,
+          },
+        },
+      }
     );
-    res.status(201).send(updated);
+
+    if (departments.length === 0) {
+      const updated = await MDAModel.findByIdAndUpdate(
+        req.params.id,
+        {
+          $push: {
+            departments: department,
+          },
+        },
+        { runValidators: true, new: true }
+      );
+      res.status(201).send("Department added successfully");
+    } else {
+      res.status(400).send("Department already exist");
+    }
   } catch (error) {
     next(error);
   }
 });
 
-mdaRouter.get("/:id/departments", async (req, res, next) => {
+mdaRouter.get("/:id/departments/", async (req, res, next) => {
   try {
     const { departments } = await MDAModel.findById(req.params.id, {
       departments: 1,
       _id: 0,
     });
+    res.send(departments);
+  } catch (error) {
+    console.log(error);
+    next(error);
+  }
+});
+
+mdaRouter.get("/:id/departments/:departmentId", async (req, res, next) => {
+  try {
+    const { departments } = await MDAModel.findOne(
+      {
+        _id: mongoose.Types.ObjectId(req.params.id),
+      },
+      {
+        _id: 0,
+        departments: {
+          $elemMatch: {
+            _id: mongoose.Types.ObjectId(req.params.departmentId),
+          },
+        },
+      }
+    );
     res.send(departments);
   } catch (error) {
     console.log(error);
@@ -169,7 +210,9 @@ mdaRouter.put(
             new: true,
           }
         );
-        res.send(modifiedDepartments);
+        if (modifiedDepartments) {
+          res.send("Updated successfully");
+        }
       } else {
         next();
       }
