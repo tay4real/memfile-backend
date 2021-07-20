@@ -1,10 +1,5 @@
 const fileRouter = require("express").Router();
-const {
-  authorize,
-  isPermanentSecretary,
-  isAdmin,
-  isRegistryOfficer,
-} = require("../../utils/auth/middleware");
+const { authorize, isAdmin } = require("../../utils/auth/middleware");
 const q2m = require("query-to-mongo");
 const filesModel = require("./general-files.schema");
 
@@ -17,7 +12,9 @@ fileRouter.get("/", authorize, async (req, res, next) => {
       .find(query.criteria)
       .sort(query.options.sort)
       .skip(query.options.skip)
-      .limit(query.options.limit);
+      .limit(query.options.limit)
+      .populate("incomingmails")
+      .populate("outgoingmails");
 
     res.send(allfiles);
   } catch (error) {
@@ -38,7 +35,7 @@ fileRouter.get("/:id", authorize, async (req, res, next) => {
 fileRouter.post(
   "/newfile",
   authorize,
-  isAdmin || isPermanentSecretary || isRegistryOfficer,
+
   async (req, res, next) => {
     try {
       // check if File title already exist for a particular MDA entry
@@ -67,9 +64,10 @@ fileRouter.post(
 fileRouter.put(
   "/:id",
   authorize,
-  isAdmin || isPermanentSecretary || isRegistryOfficer,
+
   async (req, res, next) => {
     try {
+      console.log(req.body);
       const file = await filesModel.findByIdAndUpdate(req.params.id, req.body, {
         runValidators: true,
         new: true,
@@ -86,12 +84,33 @@ fileRouter.put(
 );
 
 fileRouter.put(
-  "/:id/fileup/:mailid",
+  "/:id/fileup-incoming/:mailid",
   authorize,
-  isAdmin || isPermanentSecretary || isRegistryOfficer,
+
   async (req, res, next) => {
     try {
-      const file = await filesModel.fileupDocument(
+      const file = await filesModel.fileupIncomingMail(
+        req.params.id,
+        req.params.mailid
+      );
+      if (file) {
+        res.send("Document added to file successfully");
+      } else {
+        next(new Error("File not found"));
+      }
+    } catch (error) {
+      next(new Error(error.message));
+    }
+  }
+);
+
+fileRouter.put(
+  "/:id/fileup-outgoing/:mailid",
+  authorize,
+
+  async (req, res, next) => {
+    try {
+      const file = await filesModel.fileupOutgoingMail(
         req.params.id,
         req.params.mailid
       );
@@ -109,7 +128,7 @@ fileRouter.put(
 fileRouter.delete(
   "/:id/remove/:mailid",
   authorize,
-  isAdmin || isPermanentSecretary || isRegistryOfficer,
+
   async (req, res, next) => {
     try {
       const file = await filesModel.removeDocument(

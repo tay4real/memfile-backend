@@ -102,44 +102,49 @@ mdaRouter.delete("/", authorize, isAdmin, async (req, res, next) => {
   }
 });
 
-mdaRouter.post("/:id/departments/", async (req, res, next) => {
-  try {
-    const department = { ...req.body };
+mdaRouter.post(
+  "/:id/departments/",
+  authorize,
+  isAdmin,
+  async (req, res, next) => {
+    try {
+      const department = { ...req.body };
 
-    const { departments } = await MDAModel.findOne(
-      {
-        _id: mongoose.Types.ObjectId(req.params.id),
-      },
-      {
-        _id: 0,
-        departments: {
-          $elemMatch: {
-            deptName: department.deptName,
-          },
-        },
-      }
-    );
-
-    if (departments.length === 0) {
-      const updated = await MDAModel.findByIdAndUpdate(
-        req.params.id,
+      const { departments } = await MDAModel.findOne(
         {
-          $push: {
-            departments: department,
-          },
+          _id: mongoose.Types.ObjectId(req.params.id),
         },
-        { runValidators: true, new: true }
+        {
+          _id: 0,
+          departments: {
+            $elemMatch: {
+              deptName: department.deptName,
+            },
+          },
+        }
       );
-      res.status(201).send("Department added successfully");
-    } else {
-      res.status(400).send("Department already exist");
-    }
-  } catch (error) {
-    next(error);
-  }
-});
 
-mdaRouter.get("/:id/departments/", async (req, res, next) => {
+      if (departments.length === 0) {
+        const updated = await MDAModel.findByIdAndUpdate(
+          req.params.id,
+          {
+            $push: {
+              departments: department,
+            },
+          },
+          { runValidators: true, new: true }
+        );
+        res.status(201).send("Department added successfully");
+      } else {
+        res.status(400).send("Department already exist");
+      }
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+mdaRouter.get("/:id/departments/", authorize, async (req, res, next) => {
   try {
     const { departments } = await MDAModel.findById(req.params.id, {
       departments: 1,
@@ -152,30 +157,36 @@ mdaRouter.get("/:id/departments/", async (req, res, next) => {
   }
 });
 
-mdaRouter.get("/:id/departments/:departmentId", async (req, res, next) => {
-  try {
-    const { departments } = await MDAModel.findOne(
-      {
-        _id: mongoose.Types.ObjectId(req.params.id),
-      },
-      {
-        _id: 0,
-        departments: {
-          $elemMatch: {
-            _id: mongoose.Types.ObjectId(req.params.departmentId),
-          },
+mdaRouter.get(
+  "/:id/departments/:departmentId",
+  authorize,
+  async (req, res, next) => {
+    try {
+      const { departments } = await MDAModel.findOne(
+        {
+          _id: mongoose.Types.ObjectId(req.params.id),
         },
-      }
-    );
-    res.send(departments);
-  } catch (error) {
-    console.log(error);
-    next(error);
+        {
+          _id: 0,
+          departments: {
+            $elemMatch: {
+              _id: mongoose.Types.ObjectId(req.params.departmentId),
+            },
+          },
+        }
+      );
+      res.send(departments);
+    } catch (error) {
+      console.log(error);
+      next(error);
+    }
   }
-});
+);
 
 mdaRouter.put(
   "/:id/departments/:departmentId",
+  authorize,
+  isAdmin,
 
   async (req, res, next) => {
     try {
@@ -223,28 +234,33 @@ mdaRouter.put(
   }
 );
 
-mdaRouter.delete("/:id/departments/:departmentId", async (req, res, next) => {
-  try {
-    const modifiedDepartments = await MDAModel.findByIdAndUpdate(
-      req.params.id,
-      {
-        $pull: {
-          departments: {
-            _id: mongoose.Types.ObjectId(req.params.departmentId),
+mdaRouter.delete(
+  "/:id/departments/:departmentId",
+  authorize,
+  isAdmin,
+  async (req, res, next) => {
+    try {
+      const modifiedDepartments = await MDAModel.findByIdAndUpdate(
+        req.params.id,
+        {
+          $pull: {
+            departments: {
+              _id: mongoose.Types.ObjectId(req.params.departmentId),
+            },
           },
         },
-      },
-      {
-        new: true,
+        {
+          new: true,
+        }
+      );
+      if (modifiedDepartments) {
+        res.send("Deleted Successfully");
       }
-    );
-    if (modifiedDepartments) {
-      res.send("Deleted Successfully");
+    } catch (error) {
+      console.log(error);
+      next(error);
     }
-  } catch (error) {
-    console.log(error);
-    next(error);
   }
-});
+);
 
 module.exports = mdaRouter;

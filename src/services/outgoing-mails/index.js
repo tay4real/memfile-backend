@@ -14,7 +14,7 @@ const { authorize, isAdmin } = require("../../utils/auth/middleware");
 
 const mailModel = require("./mail.schema");
 
-mailRouter.get("/", async (req, res, next) => {
+mailRouter.get("/", authorize, async (req, res, next) => {
   try {
     const query = q2m(req.query);
 
@@ -23,14 +23,13 @@ mailRouter.get("/", async (req, res, next) => {
       .skip(query.options.skip)
       .limit(query.options.limit)
       .sort(query.options.sort);
-
     res.send(mails);
   } catch (error) {
-    next(new Error(error.message));
+    res.status(500).send(error.message);
   }
 });
 
-mailRouter.get("/:id", async (req, res, next) => {
+mailRouter.get("/:id", authorize, async (req, res, next) => {
   try {
     const mail = await mailModel.findById(req.params.id);
     res.send(mail);
@@ -39,46 +38,54 @@ mailRouter.get("/:id", async (req, res, next) => {
   }
 });
 
-mailRouter.post(
-  "/",
-  cloudinaryOutgoingMail.array("mail"),
-  async (req, res, next) => {
-    try {
-      let arr = [];
-      const arrayOfPromises = req.files.map((file) => {
-        arr.push(file.path);
-      });
-      await Promise.all(arrayOfPromises);
-
-      const outgoingMail = { ...req.body, upload_url: arr };
-      const newMail = await new mailModel(outgoingMail).save();
-      res.send(newMail._id);
-    } catch (error) {
-      next(new Error(error.message));
-    }
+mailRouter.post("/", authorize, async (req, res, next) => {
+  try {
+    const newMail = await new mailModel(req.body).save();
+    res.send(newMail._id);
+  } catch (error) {
+    next(res.status(500).send(error.message));
   }
-);
+});
 
-mailRouter.put(
-  "/:id",
+// mailRouter.post(
+//   "/",
+//   cloudinaryOutgoingMail.array("mail"),
+//   async (req, res, next) => {
+//     try {
+//       let arr = [];
+//       const arrayOfPromises = req.files.map((file) => {
+//         arr.push(file.path);
+//       });
+//       await Promise.all(arrayOfPromises);
+
+//       const outgoingMail = { ...req.body, upload_url: arr };
+//       const newMail = await new mailModel(outgoingMail).save();
+//       res.send(newMail._id);
+//     } catch (error) {
+//       next(new Error(error.message));
+//     }
+//   }
+// );
+
+mailRouter.post(
+  "/:id/upload",
+  authorize,
   cloudinaryOutgoingMail.single("mail"),
   async (req, res, next) => {
     try {
-      const outgoingMail = { ...req.body, upload_url: req.file.path };
+      let img_path = await req.file.path;
 
-      const mail = await mailModel.findByIdAndUpdate(
+      await mailModel.findByIdAndUpdate(
         req.params.id,
-        outgoingMail,
+        { upload_url: img_path },
         {
           runValidators: true,
           returnOriginal: false,
           useFindAndModify: false,
         }
       );
-      if (mail) {
-        res.send(mail);
-      } else {
-        next(new APIError("Mail not found", 404));
+      if (img_path) {
+        res.send("Uploaded Successfully");
       }
     } catch (error) {
       next(error);
@@ -86,7 +93,50 @@ mailRouter.put(
   }
 );
 
-mailRouter.get("/:id/pdf", async (req, res, next) => {
+// mailRouter.put(
+//   "/:id",
+//   cloudinaryOutgoingMail.single("mail"),
+//   async (req, res, next) => {
+//     try {
+//       const outgoingMail = { ...req.body, upload_url: req.file.path };
+
+//       const mail = await mailModel.findByIdAndUpdate(
+//         req.params.id,
+//         outgoingMail,
+//         {
+//           runValidators: true,
+//           returnOriginal: false,
+//           useFindAndModify: false,
+//         }
+//       );
+//       if (mail) {
+//         res.send(mail);
+//       } else {
+//         next(new APIError("Mail not found", 404));
+//       }
+//     } catch (error) {
+//       next(error);
+//     }
+//   }
+// );
+
+mailRouter.put("/:id", authorize, async (req, res, next) => {
+  try {
+    const mail = await mailModel.findByIdAndUpdate(req.params.id, req.body, {
+      runValidators: true,
+      new: true,
+    });
+    if (mail) {
+      res.send("Outgoing mail updated successfully");
+    } else {
+      res.status(404).send("Outgoing mail not found");
+    }
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
+});
+
+mailRouter.get("/:id/pdf", authorize, async (req, res, next) => {
   try {
     const mail = await mailModel.findById(req.params.id);
     let doc = new PDFDocument();
@@ -112,36 +162,41 @@ mailRouter.get("/:id/pdf", async (req, res, next) => {
   }
 });
 
-mailRouter.put("/fileup/:id", isAdmin, async (req, res, next) => {
-  try {
-    const status = await mailModel.fileup(req.params.id);
-    if (status) {
-      res.send(status);
+mailRouter.put(
+  "/changestatus/:id",
+  authorize,
+  isAdmin,
+  async (req, res, next) => {
+    try {
+      const status = await mailModel.fileup(req.params.id);
+      if (status) {
+        res.send(status);
+      }
+    } catch (error) {
+      next(new Error(error.message));
     }
-  } catch (error) {
-    next(new Error(error.message));
   }
-});
+);
 
-mailRouter.delete("/:id", async (req, res, next) => {
+mailRouter.delete("/:id", authorize, isAdmin, async (req, res, next) => {
   try {
     const mail = await MailModel.findByIdAndDelete(req.params.id);
     if (mail) {
       res.send("Delete successful");
     } else {
-      next(new APIError("Mail not found", 404));
+      res.status(404).send("Mail Not found");
     }
   } catch (error) {
-    next(new Error(error.message));
+    res.status(500).send(error.message);
   }
 });
 
-mailRouter.delete("/", async (req, res, next) => {
+mailRouter.delete("/", authorize, isAdmin, async (req, res, next) => {
   try {
     const data = await MailModel.deleteMany({});
     if (data) {
       res.send({
-        message: `${data.deletedCount} incoming mails were deleted successfully!`,
+        message: `${data.deletedCount} outgoing mails were deleted successfully!`,
       });
     } else {
       next();
@@ -150,7 +205,8 @@ mailRouter.delete("/", async (req, res, next) => {
     next(
       new Error({
         message:
-          err.message || "Some error occurred while removing all departments.",
+          err.message ||
+          "Some error occurred while removing all outgoing mails.",
       })
     );
   }

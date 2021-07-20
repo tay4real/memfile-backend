@@ -55,7 +55,7 @@ usersRouter
     }
   });
 
-usersRouter.get("/", authorize, isAdmin, async (req, res, next) => {
+usersRouter.get("/", authorize, async (req, res, next) => {
   try {
     const query = q2m(req.query);
 
@@ -63,7 +63,8 @@ usersRouter.get("/", authorize, isAdmin, async (req, res, next) => {
       .find(query.criteria)
       .sort(query.options.sort)
       .skip(query.options.skip)
-      .limit(query.options.limit);
+      .limit(query.options.limit)
+      .populate("generalfiles");
 
     res.send(users);
   } catch (error) {
@@ -71,12 +72,15 @@ usersRouter.get("/", authorize, isAdmin, async (req, res, next) => {
   }
 });
 
-usersRouter.get("/:id", authorize, isAdmin, async (req, res, next) => {
+usersRouter.get("/:id", authorize, async (req, res, next) => {
   try {
-    const user = await UserModel.findById(req.params.id);
-
+    const user = await UserModel.findById(req.params.id).populate(
+      "generalfiles"
+    );
+    console.log(req.params.id);
     if (user) {
       if (user.status === 0) {
+        console.log("From Here", user);
         res.send(user);
       } else {
         next(new APIError("User account has been removed", 404));
@@ -90,7 +94,7 @@ usersRouter.get("/:id", authorize, isAdmin, async (req, res, next) => {
   }
 });
 
-usersRouter.put("/:id", authorize, isAdmin, async (req, res, next) => {
+usersRouter.put("/:id", authorize, async (req, res, next) => {
   try {
     const modifiedUser = await UserModel.findByIdAndUpdate(
       req.params.id,

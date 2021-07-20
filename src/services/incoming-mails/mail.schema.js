@@ -8,7 +8,19 @@ const MailSchema = new Schema(
     recipient: String,
     dispatcher: String,
     date_received: Date,
-
+    filing_status: {
+      type: Number,
+      emum: [0, 1],
+      default: 0,
+    },
+    charge_comment: [
+      {
+        from: String,
+        to: String,
+        comment: String,
+        dateCharged: Date,
+      },
+    ],
     status: {
       type: Number,
       enum: [0, 1],
@@ -38,5 +50,5 @@ MailSchema.static("fileup", async function (id) {
   }
 });
 
-const MailModel = model("incoming-mails", MailSchema);
+const MailModel = model("incomingmails", MailSchema);
 module.exports = MailModel;

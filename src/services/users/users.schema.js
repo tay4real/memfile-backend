@@ -13,18 +13,11 @@ const UserSchema = new Schema(
         /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
         "Please fill a valid email address",
       ],
-      // validate: {
-      //   validator: async function (email) {
-      //     const user = await this.findOne({ email });
-      //     if (user && user.email === this.email) return true;
-      //     return !user ? true : false;
-      //   },
-      //   message: "email is taken",
-      // },
     },
     password: { type: String, required: [true, "Password is required"] },
     surname: { type: String, required: [true, "Surname is required"] },
     firstname: { type: String, required: [true, "First name is required"] },
+    post: String,
     avatar: String,
     role: {
       type: String,
@@ -39,6 +32,7 @@ const UserSchema = new Schema(
     },
     mda: String,
     department: String,
+    generalfiles: [{ type: Schema.Types.ObjectId, ref: "generalfiles" }],
     status: {
       type: Number,
       enum: [0, 1],

@@ -1,16 +1,28 @@
 const mailRouter = require("express").Router();
-const fs = require("fs");
+
+const multer = require("multer");
+const { writeFile } = require("fs-extra");
+const { join } = require("path");
+// const upload = multer({});
+
+// const incomingMailStorage = join(
+//   __dirname,
+//   "../../../public/filestorage/incomingmails"
+// );
 
 const PDFDocument = require("pdfkit");
+
 const {
   cloudinaryIncomingMail,
   cloudinaryDestroy,
 } = require("../../utils/cloudinary");
+
 const q2m = require("query-to-mongo");
 
 const { authorize, isAdmin } = require("../../utils/auth/middleware");
 
 const mailModel = require("./mail.schema");
+const { Console } = require("console");
 
 mailRouter.get("/", authorize, async (req, res, next) => {
   try {
@@ -46,28 +58,105 @@ mailRouter.post("/", authorize, async (req, res, next) => {
   }
 });
 
+// mailRouter.post("/:id/upload", upload.array("mail"), async (req, res, next) => {
+//   try {
+//     let image_path_arr = [];
+
+//     const arrayOfPromises = req.files.map((file) => {
+//       writeFile(join(incomingMailStorage, file.originalname), file.buffer);
+//       image_path_arr.push(join(incomingMailStorage, file.originalname));
+//     });
+//     console.log(image_path_arr);
+//     await Promise.all(arrayOfPromises);
+//     if (image_path_arr.length !== 0) {
+//       image_path_arr.map(async (image_path) => {
+//         await mailModel.findByIdAndUpdate(
+//           req.params.id,
+//           { upload_url: image_path },
+//           {
+//             runValidators: true,
+//             returnOriginal: false,
+//             useFindAndModify: false,
+//           }
+//         );
+//       });
+//       res.send("Uploaded Successfully");
+//     }
+//   } catch (error) {
+//     console.log(error);
+//     next(error);
+//   }
+// });
+
 mailRouter.post(
   "/:id/upload",
-  cloudinaryIncomingMail.single("mail"),
+  authorize,
+  cloudinaryIncomingMail.array("mail"),
   async (req, res, next) => {
     try {
-      let img_path = await req.file.path;
+      // let image_path_arr = [];
 
-      await mailModel.findByIdAndUpdate(
-        req.params.id,
-        { upload_url: img_path },
-        {
-          runValidators: true,
-          returnOriginal: false,
-          useFindAndModify: false,
-        }
-      );
-      res.send(img_path);
+      const upload = await req.files.map(async (file) => {
+        // image_path_arr.push(req.file.path);
+
+        console.log(file);
+        await mailModel.findByIdAndUpdate(req.params.id, {
+          $push: {
+            upload_url: file.path,
+          },
+        });
+      });
+
+      if (upload) {
+        res.send("Uploaded Successfully");
+      }
+      // console.log(image_path_arr);
+      // await Promise.all(arrayOfPromises);
+      // if (image_path_arr.length !== 0) {
+      //   image_path_arr.map(async (image_path) => {
+      //     await mailModel.findByIdAndUpdate(
+      //       req.params.id,
+      //       { upload_url: image_path },
+      //       {
+      //         runValidators: true,
+      //         returnOriginal: false,
+      //         useFindAndModify: false,
+      //       }
+      //     );
+      //   });
+      //   res.send("Uploaded Successfully");
+      // }
     } catch (error) {
+      console.log(error);
       next(error);
     }
   }
 );
+
+// mailRouter.post(
+//   "/:id/upload",
+//   cloudinaryIncomingMail.single("mail"),
+//   async (req, res, next) => {
+//     try {
+//       let img_path = await req.file.path;
+
+//       await mailModel.findByIdAndUpdate(
+//         req.params.id,
+//         { upload_url: img_path },
+//         {
+//           runValidators: true,
+//           returnOriginal: false,
+//           useFindAndModify: false,
+//         }
+//       );
+//       if (img_path) {
+//         res.send("Uploaded Successfully");
+//       }
+//     } catch (error) {
+//       next(error);
+//     }
+//   }
+// );
 
 mailRouter.put("/:id", authorize, async (req, res, next) => {
   try {
@@ -78,7 +167,7 @@ mailRouter.put("/:id", authorize, async (req, res, next) => {
     if (mail) {
       res.send("Incoming mail updated successfully");
     } else {
-      next(new APIError("Mail not found", 404));
+      res.status(404).send("Incoming mail not found");
     }
   } catch (error) {
     next(new Error(error.message));
@@ -156,7 +245,8 @@ mailRouter.delete("/", authorize, isAdmin, async (req, res, next) => {
     next(
       new Error({
         message:
-          err.message || "Some error occurred while removing all departments.",
+          err.message ||
+          "Some error occurred while removing all incoming mails.",
       })
     );
   }

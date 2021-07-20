@@ -4,8 +4,10 @@ const FilesSchema = new Schema(
   {
     file_title: String,
     file_no: String,
+    paper_fileno: String,
     mdaShortName: String,
-    mails: [{ type: Schema.Types.ObjectId, ref: "mails" }],
+    incomingmails: [{ type: Schema.Types.ObjectId, ref: "incomingmails" }],
+    outgoingmails: [{ type: Schema.Types.ObjectId, ref: "outgoingmails" }],
     status: {
       type: Number,
       enum: [0, 1],
@@ -20,8 +22,7 @@ const FilesSchema = new Schema(
       {
         from: String,
         to: String,
-        pageIndex: Number,
-        remark: String,
+        doc_id: String,
         dateCharged: Date,
       },
     ],
@@ -50,16 +51,36 @@ FilesSchema.methods.toJSON = function () {
 };
 
 FilesSchema.static("findFileWithMails", async function (id) {
-  const file = await FileModel.findById(id);
+  const file = await FileModel.findById(id)
+    .populate("incomingmails")
+    .populate("outgoingmails");
   return file;
 });
 
-FilesSchema.static("fileupDocument", async function (id, mail_id) {
+FilesSchema.static("fileupIncomingMail", async function (id, mail_id) {
   const file = await FileModel.findByIdAndUpdate(
     id,
     {
       $push: {
-        mails: mail_id,
+        incomingmails: mail_id,
+      },
+    },
+    {
+      runValidators: true,
+      new: true,
+    }
+  );
+  if (file) {
+    return file;
+  }
+});
+
+FilesSchema.static("fileupOutgoingMail", async function (id, mail_id) {
+  const file = await FileModel.findByIdAndUpdate(
+    id,
+    {
+      $push: {
+        outgoingmails: mail_id,
       },
     },
     {
@@ -77,7 +98,8 @@ FilesSchema.static("removeDocument", async function (id, mail_id) {
     id,
     {
       $pull: {
-        mails: mail_id,
+        incomingmails: mail_id,
+        outgoingmails: mail_id,
       },
     },
     {

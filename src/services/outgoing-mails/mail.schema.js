@@ -5,15 +5,24 @@ const MailSchema = new Schema(
     ref_no: String,
     subject: String,
     to: String,
-    author: String,
+    sender: String,
     recipient: String,
+    dispatcher: String,
     date_sent: Date,
+    charge_comment: [
+      {
+        from: String,
+        to: String,
+        comment: String,
+        dateCharged: Date,
+      },
+    ],
     status: {
       type: Number,
       enum: [0, 1],
       default: 0,
     },
-    upload_format: String,
+
     upload_url: [String],
   },
   { timestamps: true, virtuals: true }
@@ -38,5 +47,5 @@ MailSchema.static("fileup", async function (id) {
   }
 });
 
-const MailModel = model("outgoing-mails", MailSchema);
+const MailModel = model("outgoingmails", MailSchema);
 module.exports = MailModel;

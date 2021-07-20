@@ -23,6 +23,7 @@ const corsOptions = {
 
 server.use(cors(corsOptions));
 const staticFolderPath = join(__dirname, "../public");
+
 server.use(express.static(staticFolderPath));
 server.use(express.json());
 server.use(cookieParser());
