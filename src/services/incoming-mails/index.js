@@ -158,7 +158,7 @@ mailRouter.post(
 //   }
 // );
 
-mailRouter.put("/:id", authorize, async (req, res, next) => {
+mailRouter.put("/:id", authorize, async (req, res) => {
   try {
     const mail = await mailModel.findByIdAndUpdate(req.params.id, req.body, {
       runValidators: true,
@@ -233,7 +233,7 @@ mailRouter.delete("/:id", authorize, isAdmin, async (req, res, next) => {
 
 mailRouter.delete("/", authorize, isAdmin, async (req, res, next) => {
   try {
-    const data = await MailModel.deleteMany({});
+    const data = await mailModel.deleteMany({});
     if (data) {
       res.send({
         message: `${data.deletedCount} incoming mails were deleted successfully!`,
@@ -249,6 +249,102 @@ mailRouter.delete("/", authorize, isAdmin, async (req, res, next) => {
           "Some error occurred while removing all incoming mails.",
       })
     );
+  }
+});
+
+mailRouter.get("/report/stats", authorize, async (req, res) => {
+  try {
+    const data = await mailModel.aggregate([
+      {
+        $project: {
+          month: { $month: "$createdAt" },
+        },
+      },
+      {
+        $group: {
+          _id: "$month",
+          total: { $sum: 1 },
+        },
+      },
+    ]);
+    res.status(200).json(data);
+  } catch (error) {
+    res.status(500).json(error);
+  }
+});
+
+mailRouter.get("/report/counts", authorize, async (req, res) => {
+  try {
+    const total = await mailModel.countDocuments();
+    res.status(200).json({ total });
+  } catch (error) {
+    res.status(500).json(error);
+  }
+});
+
+mailRouter.post("/search/results", authorize, async (req, res) => {
+  try {
+    const searchVariable = req.body.criteria;
+    const search = [];
+
+    // convert to all posible format
+    search.push(searchVariable);
+    search.push(searchVariable.toUpperCase());
+    search.push(searchVariable.toLowerCase());
+    search.push(
+      searchVariable.charAt(0).toUpperCase() + searchVariable.slice(1)
+    );
+
+    const arr = searchVariable.split(" ");
+    for (let i = 0; i < arr.length; i++) {
+      arr[i] = arr[i].charAt(0).toUpperCase() + arr[i].slice(1);
+    }
+    const capitalizeFirstLetterPerWord = arr.join(" ");
+
+    search.push(capitalizeFirstLetterPerWord);
+
+    const searchResult = [];
+
+    for (let i = 0; i < search.length; i++) {
+      const result = await mailModel.find({
+        ref_no: new RegExp(".*" + search[i] + ".*"),
+      });
+      if (result) {
+        searchResult.push(...result);
+      }
+      const result2 = await mailModel.find({
+        subject: new RegExp(".*" + search[i] + ".*"),
+      });
+      if (result2) {
+        searchResult.push(...result2);
+      }
+      const result3 = await mailModel.find({
+        sender: new RegExp(".*" + search[i] + ".*"),
+      });
+      if (result3) {
+        searchResult.push(...result3);
+      }
+      const result4 = await mailModel.find({
+        recipient: new RegExp(".*" + search[i] + ".*"),
+      });
+      if (result4) {
+        searchResult.push(...result4);
+      }
+    }
+
+    const uniqueResult = searchResult.filter((result, index) => {
+      const _result = JSON.stringify(result);
+      return (
+        index ===
+        searchResult.findIndex((obj) => {
+          return JSON.stringify(obj) === _result;
+        })
+      );
+    });
+
+    res.status(200).json(uniqueResult);
+  } catch (error) {
+    res.status(500).json(error);
   }
 });
 

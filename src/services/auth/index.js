@@ -1,7 +1,15 @@
 const usersRouter = require("express").Router();
 const UserModel = require("../users/users.schema");
 
-const transporter = require("../../utils/email");
+const nodemailer = require("nodemailer");
+
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: "ademuyiwaolutayo@gmail.com",
+    pass: "0lumay0wa",
+  },
+});
 
 const { authenticate } = require("../../utils/auth/tools");
 
@@ -41,7 +49,7 @@ usersRouter.post(
           }
         });
       }
-      res.send(newUser);
+      res.send("User registerd sucessfully");
     } catch (error) {
       if (error.code === 11000) next(new Error("Email is already in use"));
       next(error);

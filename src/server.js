@@ -26,6 +26,7 @@ const staticFolderPath = join(__dirname, "../public");
 
 server.use(express.static(staticFolderPath));
 server.use(express.json());
+
 server.use(cookieParser());
 // simple route
 server.get("/", (req, res) => {
@@ -47,12 +48,12 @@ mongoose
     useCreateIndex: true,
     useFindAndModify: false,
   })
-  .then(
-    server.listen(port, () => {
-      console.info(" ✅  Server is running on port " + port);
-    })
-  )
+  .then(() => console.log("✅ DB connection success"))
   .catch((error) => {
-    console.error(" ❌ Error : server is not running :  " + error);
+    console.error(" ❌ Error : DB connection failed :  " + error);
     process.exit();
   });
+
+server.listen(port, () => {
+  console.info("✅  Backend Server is running on port " + port);
+});

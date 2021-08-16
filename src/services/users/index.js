@@ -156,4 +156,34 @@ usersRouter.delete("/:id", authorize, isAdmin, async (req, res, next) => {
   }
 });
 
+usersRouter.get("/report/stats", authorize, async (req, res) => {
+  try {
+    const data = await UserModel.aggregate([
+      {
+        $project: {
+          month: { $month: "$createdAt" },
+        },
+      },
+      {
+        $group: {
+          _id: "$month",
+          total: { $sum: 1 },
+        },
+      },
+    ]);
+    res.status(200).json(data);
+  } catch (error) {
+    res.status(500).json(error);
+  }
+});
+
+usersRouter.get("/report/counts", authorize, async (req, res) => {
+  try {
+    const total = await UserModel.countDocuments();
+    res.status(200).json({ total });
+  } catch (error) {
+    res.status(500).json(error);
+  }
+});
+
 module.exports = usersRouter;
