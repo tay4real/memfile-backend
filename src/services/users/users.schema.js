@@ -23,12 +23,10 @@ const UserSchema = new Schema(
       type: String,
       enum: [
         "Admin",
-        "Chairman",
-        "Permanent Secretary",
-        "Director",
         "Registry Officer",
+        "User"
       ],
-      default: "Registry Officer",
+      default: "User",
     },
     mda: String,
     department: String,
