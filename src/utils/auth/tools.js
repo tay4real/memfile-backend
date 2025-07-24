@@ -1,23 +1,31 @@
-const jwt = require("jsonwebtoken");
-const UserModel = require("../../services/users/users.schema");
+const jwt = require('jsonwebtoken');
+const UserModel = require('../../services/users/users.schema');
 
-const authenticate = async (user) => {
-  try {
-    const accessToken = await generateJWT({ _id: user._id });
-    return { accessToken };
-  } catch (error) {
-    throw new Error(error);
-  }
+// Token generation helper
+const generateAccessToken = (payload) =>
+  jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '15m' });
+
+const generateRefreshToken = (payload) =>
+  jwt.sign(payload, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
+
+// Save refresh token to DB
+const saveRefreshToken = async (userId, refreshToken) => {
+  await UserModel.findByIdAndUpdate(userId, {
+    refreshToken,
+  });
 };
 
-const generateJWT = async (payload) => {
+// Main auth function
+const authenticate = async (user) => {
   try {
-    const token = await jwt.sign(payload, process.env.JWT_SECRET, {
-      expiresIn: "1h",
-    });
-    return token;
+    const accessToken = generateAccessToken({ _id: user._id });
+    const refreshToken = generateRefreshToken({ _id: user._id });
+
+    await saveRefreshToken(user._id, refreshToken);
+
+    return { accessToken, refreshToken };
   } catch (error) {
-    console.log(error);
+    throw new Error(error);
   }
 };
 
@@ -30,4 +38,14 @@ const verifyJWT = async (token) => {
   }
 };
 
-module.exports = { authenticate, verifyJWT };
+const verifyRefreshToken = (token) =>
+  jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+
+module.exports = {
+  authenticate,
+  verifyJWT,
+  verifyRefreshToken,
+  generateAccessToken,
+  generateRefreshToken,
+  saveRefreshToken,
+};

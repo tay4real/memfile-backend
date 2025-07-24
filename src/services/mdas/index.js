@@ -1,11 +1,11 @@
-const mdaRouter = require("express").Router();
-const { authorize, isAdmin } = require("../../utils/auth/middleware");
-const q2m = require("query-to-mongo");
-const MDAModel = require("./mda.schema");
-const mongoose = require("mongoose");
+const mdaRouter = require('express').Router();
+const { authorize, isAdmin } = require('../../utils/auth/middleware');
+const q2m = require('query-to-mongo');
+const MDAModel = require('./mda.schema');
+const mongoose = require('mongoose');
 
 // List all MDAS
-mdaRouter.get("/", authorize, async (req, res, next) => {
+mdaRouter.get('/', authorize, async (req, res, next) => {
   try {
     const query = q2m(req.query);
     const total = await MDAModel.countDocuments(query.criteria);
@@ -21,7 +21,7 @@ mdaRouter.get("/", authorize, async (req, res, next) => {
 });
 
 // Returns an MDA
-mdaRouter.get("/:id", authorize, async (req, res, next) => {
+mdaRouter.get('/:id', authorize, async (req, res, next) => {
   try {
     const mda = await MDAModel.findById(req.params.id);
     res.send(mda);
@@ -31,21 +31,21 @@ mdaRouter.get("/:id", authorize, async (req, res, next) => {
 });
 
 // create a new MDA
-mdaRouter.post("/", authorize, isAdmin, async (req, res, next) => {
+mdaRouter.post('/', authorize, isAdmin, async (req, res, next) => {
   try {
     console.log(req.body);
 
     const name = await MDAModel.findOne({ name: req.body.name });
     const shortName = await MDAModel.findOne({ shortName: req.body.shortName });
     if (name || shortName) {
-      res.status(400).send("MDA record already exist");
+      res.status(400).send('MDA record already exist');
     } else {
       const mda = await new MDAModel(req.body).save();
       console.log(mda);
       const id = mda._id;
       console.log(id);
       if (id) {
-        res.status(201).send("MDA added successfully");
+        res.status(201).send('MDA added successfully');
       }
     }
   } catch (error) {
@@ -53,36 +53,36 @@ mdaRouter.post("/", authorize, isAdmin, async (req, res, next) => {
   }
 });
 
-mdaRouter.put("/:id", authorize, isAdmin, async (req, res, next) => {
+mdaRouter.put('/:id', authorize, isAdmin, async (req, res, next) => {
   try {
     const mda = await MDAModel.findByIdAndUpdate(req.params.id, req.body, {
       runValidators: true,
       new: true,
     });
     if (mda) {
-      res.status(201).send("MDA updated successfully");
+      res.status(201).send('MDA updated successfully');
     } else {
-      next(new Error("MDA not found"));
+      next(new Error('MDA not found'));
     }
   } catch (error) {
     next(new Error(error.message));
   }
 });
 
-mdaRouter.delete("/:id", authorize, isAdmin, async (req, res, next) => {
+mdaRouter.delete('/:id', authorize, isAdmin, async (req, res, next) => {
   try {
     const mda = await MDAModel.findByIdAndDelete(req.params.id);
     if (mda) {
-      res.send("MDA record deleted successfully");
+      res.send('MDA record deleted successfully');
     } else {
-      next(new Error("MDA not found"));
+      next(new Error('MDA not found'));
     }
   } catch (error) {
     next(new Error(error.message));
   }
 });
 
-mdaRouter.delete("/", authorize, isAdmin, async (req, res, next) => {
+mdaRouter.delete('/', authorize, isAdmin, async (req, res, next) => {
   try {
     const data = await MDAModel.deleteMany({});
     if (data) {
@@ -96,14 +96,14 @@ mdaRouter.delete("/", authorize, isAdmin, async (req, res, next) => {
     next(
       new Error({
         message:
-          err.message || "Some error occurred while removing all departments.",
+          err.message || 'Some error occurred while removing all departments.',
       })
     );
   }
 });
 
 mdaRouter.post(
-  "/:id/departments/",
+  '/:id/departments/',
   authorize,
   isAdmin,
   async (req, res, next) => {
@@ -134,9 +134,9 @@ mdaRouter.post(
           },
           { runValidators: true, new: true }
         );
-        res.status(201).send("Department added successfully");
+        res.status(201).send('Department added successfully');
       } else {
-        res.status(400).send("Department already exist");
+        res.status(400).send('Department already exist');
       }
     } catch (error) {
       next(error);
@@ -144,7 +144,7 @@ mdaRouter.post(
   }
 );
 
-mdaRouter.get("/:id/departments/", authorize, async (req, res, next) => {
+mdaRouter.get('/:id/departments/', authorize, async (req, res, next) => {
   try {
     const { departments } = await MDAModel.findById(req.params.id, {
       departments: 1,
@@ -158,7 +158,7 @@ mdaRouter.get("/:id/departments/", authorize, async (req, res, next) => {
 });
 
 mdaRouter.get(
-  "/:id/departments/:departmentId",
+  '/:id/departments/:departmentId',
   authorize,
   async (req, res, next) => {
     try {
@@ -184,7 +184,7 @@ mdaRouter.get(
 );
 
 mdaRouter.put(
-  "/:id/departments/:departmentId",
+  '/:id/departments/:departmentId',
   authorize,
   isAdmin,
 
@@ -213,16 +213,16 @@ mdaRouter.put(
         const modifiedDepartments = await MDAModel.findOneAndUpdate(
           {
             _id: mongoose.Types.ObjectId(req.params.id),
-            "departments._id": mongoose.Types.ObjectId(req.params.departmentId),
+            'departments._id': mongoose.Types.ObjectId(req.params.departmentId),
           },
-          { $set: { "departments.$": departmentToReplace } },
+          { $set: { 'departments.$': departmentToReplace } },
           {
             runValidators: true,
             new: true,
           }
         );
         if (modifiedDepartments) {
-          res.send("Updated successfully");
+          res.send('Updated successfully');
         }
       } else {
         next();
@@ -235,7 +235,7 @@ mdaRouter.put(
 );
 
 mdaRouter.delete(
-  "/:id/departments/:departmentId",
+  '/:id/departments/:departmentId',
   authorize,
   isAdmin,
   async (req, res, next) => {
@@ -254,7 +254,7 @@ mdaRouter.delete(
         }
       );
       if (modifiedDepartments) {
-        res.send("Deleted Successfully");
+        res.send('Deleted Successfully');
       }
     } catch (error) {
       console.log(error);
