@@ -1,14 +1,49 @@
-const filemovementRouter = require("express").Router();
-const mongoose = require("mongoose");
+/**
+ * @swagger
+ * tags:
+ *   name: File Movement
+ *   description: Operations related to general file movement
+ */
 
-const UserModel = require("../users/users.schema");
-const IncomingMailModel = require("../incoming-mails/mail.schema");
-const OutgoingMailModel = require("../outgoing-mails/mail.schema");
-const FileModel = require("../general-files/general-files.schema");
-const { authorize } = require("../../utils/auth/middleware");
+const filemovementRouter = require('express').Router();
+const mongoose = require('mongoose');
+
+const UserModel = require('../users/users.schema');
+const IncomingMailModel = require('../incoming-mails/mail.schema');
+const OutgoingMailModel = require('../outgoing-mails/mail.schema');
+const FileModel = require('../general-files/general-files.schema');
+const { authorize } = require('../../utils/auth/middleware');
+
+/**
+ * @swagger
+ * /general-filemovement/{user_id}/requestfile/{file_id}:
+ *   put:
+ *     summary: Request a general file
+ *     tags: [File Movement]
+ *     parameters:
+ *       - in: path
+ *         name: user_id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the user requesting the file
+ *       - in: path
+ *         name: file_id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the file being requested
+ *     responses:
+ *       200:
+ *         description: File Request Granted
+ *       400:
+ *         description: File in use or user does not exist
+ *       500:
+ *         description: Server error
+ */
 
 filemovementRouter.put(
-  "/:user_id/requestfile/:file_id",
+  '/:user_id/requestfile/:file_id',
   authorize,
 
   async (req, res, next) => {
@@ -52,10 +87,10 @@ filemovementRouter.put(
 
           if (file) {
             console.log(new Date());
-            res.send("File Request Granted");
+            res.send('File Request Granted');
           }
         } else {
-          res.status(400).send("User does not exist");
+          res.status(400).send('User does not exist');
         }
       } else {
         let totalFileRequests = file.fileRequest.length;
@@ -65,7 +100,7 @@ filemovementRouter.put(
           .status(400)
           .send(
             `File already in use by ${
-              file_user.surname + " " + file_user.firstname
+              file_user.surname + ' ' + file_user.firstname
             }`
           );
       }
@@ -75,8 +110,51 @@ filemovementRouter.put(
   }
 );
 
+/**
+ * @swagger
+ * /general-filemovement/{user_id}/moveFile/{file_id}:
+ *   put:
+ *     summary: Move a file to another user
+ *     tags: [File Movement]
+ *     parameters:
+ *       - in: path
+ *         name: user_id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the current holder of the file
+ *       - in: path
+ *         name: file_id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the file to be moved
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               user_to_id:
+ *                 type: string
+ *               document_id:
+ *                 type: string
+ *               charge_comment:
+ *                 type: string
+ *               docType:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: File charging successful
+ *       400:
+ *         description: File already charged to user
+ *       500:
+ *         description: Server error
+ */
+
 filemovementRouter.put(
-  "/:user_id/moveFile/:file_id",
+  '/:user_id/moveFile/:file_id',
   authorize,
 
   async (req, res, next) => {
@@ -94,14 +172,14 @@ filemovementRouter.put(
 
       if (file && file.file_location === 1) {
         // select the user you are charging file to
-        let user_sending = "";
+        let user_sending = '';
         let user_from = await UserModel.findById(user_from_id);
         if (user_from) {
           user_sending =
             user_from.surname +
-            " - " +
+            ' - ' +
             user_from.post +
-            ", " +
+            ', ' +
             user_from.department;
         }
 
@@ -110,7 +188,7 @@ filemovementRouter.put(
 
         if (user_to) {
           const user_receiving =
-            user_to.surname + " - " + user_to.post + ", " + user_to.department;
+            user_to.surname + ' - ' + user_to.post + ', ' + user_to.department;
           let file_exist = false;
           user_to.generalfiles.map((file_no) => {
             if (
@@ -122,7 +200,7 @@ filemovementRouter.put(
           });
 
           if (file_exist) {
-            res.send("File already charged to user");
+            res.send('File already charged to user');
           } else {
             // charge file to another user
             console.log(user_receiving);
@@ -138,7 +216,7 @@ filemovementRouter.put(
               },
             });
 
-            if (docType === "incomingmails") {
+            if (docType === 'incomingmails') {
               console.log(docType);
               console.log(doc_id);
               const incomingmail = await IncomingMailModel.findByIdAndUpdate(
@@ -157,7 +235,7 @@ filemovementRouter.put(
               console.log(incomingmail);
             }
 
-            if (docType === "outgoingmails") {
+            if (docType === 'outgoingmails') {
               const incomingmail = await OutgoingMailModel.findByIdAndUpdate(
                 doc_id,
                 {
@@ -205,7 +283,7 @@ filemovementRouter.put(
               );
             }
 
-            res.send("File charging successful");
+            res.send('File charging successful');
           }
         }
       } else {
@@ -217,8 +295,34 @@ filemovementRouter.put(
   }
 );
 
+/**
+ * @swagger
+ * /general-filemovement/{user_id}/returnFile/{file_id}:
+ *   put:
+ *     summary: Return a file to the registry
+ *     tags: [File Movement]
+ *     parameters:
+ *       - in: path
+ *         name: user_id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the user returning the file
+ *       - in: path
+ *         name: file_id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the file being returned
+ *     responses:
+ *       200:
+ *         description: File returned successfully
+ *       500:
+ *         description: Server error
+ */
+
 filemovementRouter.put(
-  "/:user_id/returnFile/:file_id",
+  '/:user_id/returnFile/:file_id',
   authorize,
 
   async (req, res, next) => {
@@ -252,7 +356,7 @@ filemovementRouter.put(
             },
           },
         });
-        res.send("File returned successfully");
+        res.send('File returned successfully');
       }
     } catch (error) {
       next(new Error(error.message));
@@ -260,9 +364,28 @@ filemovementRouter.put(
   }
 );
 
-// CLEAR ALL REQUEST FILE LOG
+/**
+ * @swagger
+ * /general-filemovement/{file_id}/requestfile/:
+ *   delete:
+ *     summary: Clear all file request logs
+ *     tags: [File Movement]
+ *     parameters:
+ *       - in: path
+ *         name: file_id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: File ID to clear request logs for
+ *     responses:
+ *       200:
+ *         description: Requested Files Log cleared
+ *       500:
+ *         description: Server error
+ */
+
 filemovementRouter.delete(
-  "/:file_id/requestfile/",
+  '/:file_id/requestfile/',
   authorize,
 
   async (req, res, next) => {
@@ -276,7 +399,7 @@ filemovementRouter.delete(
           $pull: { fileRequest: { $exists: true } },
         });
 
-        res.send("Requested Files Log cleared");
+        res.send('Requested Files Log cleared');
       }
     } catch (error) {
       res.status(500).send(error.message);
@@ -284,9 +407,28 @@ filemovementRouter.delete(
   }
 );
 
-// CLEAR ALL RETURN FILE LOG
+/**
+ * @swagger
+ * /general-filemovement/{file_id}/returnfile/:
+ *   delete:
+ *     summary: Clear all file return logs
+ *     tags: [File Movement]
+ *     parameters:
+ *       - in: path
+ *         name: file_id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: File ID to clear return logs for
+ *     responses:
+ *       200:
+ *         description: Returned Files Log cleared
+ *       500:
+ *         description: Server error
+ */
+
 filemovementRouter.delete(
-  "/:file_id/returnfile/",
+  '/:file_id/returnfile/',
   authorize,
 
   async (req, res, next) => {
@@ -300,7 +442,7 @@ filemovementRouter.delete(
           $pull: { fileReturn: { $exists: true } },
         });
 
-        res.send("Returned Files Log cleared");
+        res.send('Returned Files Log cleared');
       }
     } catch (error) {
       res.status(500).send(error.message);
@@ -308,9 +450,28 @@ filemovementRouter.delete(
   }
 );
 
-// CLEAR Charge File LOG
+/**
+ * @swagger
+ * /general-filemovement/{file_id}/chargefile/:
+ *   delete:
+ *     summary: Clear all file charge logs
+ *     tags: [File Movement]
+ *     parameters:
+ *       - in: path
+ *         name: file_id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: File ID to clear charge logs for
+ *     responses:
+ *       200:
+ *         description: Charge Files Log cleared
+ *       500:
+ *         description: Server error
+ */
+
 filemovementRouter.delete(
-  "/:file_id/chargefile/",
+  '/:file_id/chargefile/',
   authorize,
 
   async (req, res, next) => {
@@ -324,7 +485,7 @@ filemovementRouter.delete(
           $pull: { chargeFile: { $exists: true } },
         });
 
-        res.send("Charge Files Log cleared");
+        res.send('Charge Files Log cleared');
       }
     } catch (error) {
       res.status(500).send(error.message);
