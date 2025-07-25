@@ -1,16 +1,54 @@
-const filemovementRouter = require("express").Router();
+/**
+ * @swagger
+ * tags:
+ *   name: Personal File Movement
+ *   description: APIs to request, charge, and return personal files between users.
+ */
+const filemovementRouter = require('express').Router();
 
-const UserModel = require("../users/users.schema");
-const FileModel = require("../personal-files/personal-files.schema");
+const UserModel = require('../users/users.schema');
+const FileModel = require('../personal-files/personal-files.schema');
 const {
   authorize,
   isRegistryOfficer,
   isPermanentSecretary,
   isAdmin,
-} = require("../../utils/auth/middleware");
+} = require('../../utils/auth/middleware');
+
+/**
+ * @swagger
+ * /personal-filemovement/{user_id}/requestfile/{file_id}:
+ *   put:
+ *     summary: Request a personal file for a user
+ *     description: Allows authorized users to request a file by moving it to a specific user's possession and updating its status.
+ *     tags:
+ *       - Personal File Movement
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: user_id
+ *         in: path
+ *         required: true
+ *         description: ID of the user requesting the file
+ *         schema:
+ *           type: string
+ *       - name: file_id
+ *         in: path
+ *         required: true
+ *         description: ID of the file being requested
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: File request granted
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
 
 filemovementRouter.put(
-  "/:user_id/requestfile/:file_id",
+  '/:user_id/requestfile/:file_id',
   authorize,
   isAdmin || isPermanentSecretary || isRegistryOfficer,
   async (req, res, next) => {
@@ -52,7 +90,7 @@ filemovementRouter.put(
           },
         });
 
-        res.send("File request granted");
+        res.send('File request granted');
       } else {
         next();
       }
@@ -62,8 +100,54 @@ filemovementRouter.put(
   }
 );
 
+/**
+ * @swagger
+ * /personal-filemovement/{user_id}/moveFile/{file_id}:
+ *   put:
+ *     summary: Move personal file to another user
+ *     description: Charges a personal file from one user to another, recording the movement history.
+ *     tags:
+ *       - Personal File Movement
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: user_id
+ *         in: path
+ *         required: true
+ *         description: ID of the user currently holding the file
+ *         schema:
+ *           type: string
+ *       - name: file_id
+ *         in: path
+ *         required: true
+ *         description: ID of the file to be moved
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       description: Destination user and remarks
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               user_to_id:
+ *                 type: string
+ *               pgIndex:
+ *                 type: string
+ *               pgRemark:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: File charging successful
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
+
 filemovementRouter.put(
-  "/:user_id/moveFile/:file_id",
+  '/:user_id/moveFile/:file_id',
   authorize,
   isAdmin || isPermanentSecretary || isRegistryOfficer,
   async (req, res, next) => {
@@ -72,7 +156,7 @@ filemovementRouter.put(
     const file_id = req.params.file_id;
     const pgIndex = req.body.pgIndex;
     const pgRemark = req.body.pgRemark;
-    const date = new Date();
+  
     try {
       // charge file to another user
       const file = await FileModel.findByIdAndUpdate(id, {
@@ -129,7 +213,7 @@ filemovementRouter.put(
           );
         }
 
-        res.send("File charging successful");
+        res.send('File charging successful');
       } else {
         next();
       }
@@ -139,8 +223,40 @@ filemovementRouter.put(
   }
 );
 
+/**
+ * @swagger
+ * /personal-filemovement/{user_id}/returnFile/{file_id}:
+ *   put:
+ *     summary: Return a personal file to registry
+ *     description: Returns a file back to the registry, updates user record and sets file location as available.
+ *     tags:
+ *       - Personal File Movement
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: user_id
+ *         in: path
+ *         required: true
+ *         description: ID of the user returning the file
+ *         schema:
+ *           type: string
+ *       - name: file_id
+ *         in: path
+ *         required: true
+ *         description: ID of the file to be returned
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: File returned successfully
+ *       404:
+ *         description: User or file not found
+ *       500:
+ *         description: Server error
+ */
+
 filemovementRouter.put(
-  "/:userid/returnFile/:file_id",
+  '/:userid/returnFile/:file_id',
   authorize,
   isAdmin || isPermanentSecretary || isRegistryOfficer,
   async (req, res, next) => {

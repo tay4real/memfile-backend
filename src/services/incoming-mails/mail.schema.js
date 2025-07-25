@@ -1,4 +1,4 @@
-const { Schema, model } = require("mongoose");
+const { Schema, model } = require('mongoose');
 
 const MailSchema = new Schema(
   {
@@ -39,16 +39,16 @@ MailSchema.methods.toJSON = function () {
   return mailObject;
 };
 
-MailSchema.static("fileup", async function (id) {
+MailSchema.static('fileup', async function (id) {
   const mail = await MailModel.findByIdAndUpdate(id, {
     $set: {
       status: 1,
     },
   });
   if (mail) {
-    return "Filed successfully";
+    return 'Filed successfully';
   }
 });
 
-const MailModel = model("incomingmails", MailSchema);
+const MailModel = model('incomingmails', MailSchema);
 module.exports = MailModel;

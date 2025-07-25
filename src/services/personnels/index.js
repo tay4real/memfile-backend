@@ -1,22 +1,51 @@
-const router = require("express").Router();
-const fs = require("fs");
-const mongoose = require("mongoose");
+/**
+ * @swagger
+ * tags:
+ *   name: Personnels
+ *   description: API for managing personnel records, including their qualifications, leaves, promotions, and queries.
+ */
 
-const PDFDocument = require("pdfkit");
+const router = require('express').Router();
+const fs = require('fs');
+const mongoose = require('mongoose');
+
+const PDFDocument = require('pdfkit');
 const {
   cloudinaryLeaves,
   cloudinaryPromotions,
   cloudinaryQualifications,
   cloudinaryQueries,
   cloudinaryDestroy,
-} = require("../../utils/cloudinary");
-const q2m = require("query-to-mongo");
+} = require('../../utils/cloudinary');
+const q2m = require('query-to-mongo');
 
-const { authorize, isAdmin } = require("../../utils/auth/middleware");
+const { authorize, isAdmin } = require('../../utils/auth/middleware');
 
-const personnelModel = require("./personnel.schema");
+const personnelModel = require('./personnel.schema');
 
-router.post("/", async (req, res, next) => {
+/**
+ * @swagger
+ * /personnels:
+ *   post:
+ *     summary: Create a new personnel
+ *     tags: [Personnels]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             example:
+ *               firstName: John
+ *               lastName: Doe
+ *               email: john@example.com
+ *               // Add other personnel fields here
+ *     responses:
+ *       201:
+ *         description: Created
+ */
+
+router.post('/', async (req, res, next) => {
   try {
     const newPersonnel = new personnelModel(req.body);
     const { _id } = await newPersonnel.save();
@@ -26,7 +55,18 @@ router.post("/", async (req, res, next) => {
   }
 });
 
-router.get("/", async (req, res, next) => {
+/**
+ * @swagger
+ * /personnels:
+ *   get:
+ *     summary: Get all personnels
+ *     tags: [Personnels]
+ *     responses:
+ *       200:
+ *         description: OK
+ */
+
+router.get('/', async (req, res, next) => {
   try {
     const personnels = await personnelModel.find();
     res.send(personnels);
@@ -36,7 +76,24 @@ router.get("/", async (req, res, next) => {
   }
 });
 
-router.get("/:id", async (req, res, next) => {
+/**
+ * @swagger
+ * /personnels/{id}:
+ *   get:
+ *     summary: Get a specific personnel by ID
+ *     tags: [Personnels]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: OK
+ */
+
+router.get('/:id', async (req, res, next) => {
   try {
     const personnel = await personnelModel.findById(req.params.id);
     res.send(personnel);
@@ -46,7 +103,32 @@ router.get("/:id", async (req, res, next) => {
   }
 });
 
-router.put("/:id", async (req, res, next) => {
+/**
+ * @swagger
+ * /personnels/{id}:
+ *   put:
+ *     summary: Update personnel details
+ *     tags: [Personnels]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: Personnel ID
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             example:
+ *               position: Senior Officer
+ *     responses:
+ *       200:
+ *         description: Personnel updated successfully
+ */
+
+router.put('/:id', async (req, res, next) => {
   try {
     const modifiedPersonnel = await personnelModel.findByIdAndUpdate(
       req.params.id,
@@ -67,7 +149,25 @@ router.put("/:id", async (req, res, next) => {
   }
 });
 
-router.delete("/:id", async (req, res, next) => {
+/**
+ * @swagger
+ * /personnels/{id}:
+ *   delete:
+ *     summary: Delete a personnel by ID
+ *     tags: [Personnels]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: Personnel ID
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Personnel deleted successfully
+ */
+
+router.delete('/:id', async (req, res, next) => {
   try {
     const personnel = await personnelModel.findByIdAndDelete(req.params.id);
     if (personnel) {
@@ -81,9 +181,116 @@ router.delete("/:id", async (req, res, next) => {
   }
 });
 
+/**
+ * @swagger
+ *
+ * /personnels/{id}/qualifications/:
+ *   post:
+ *     summary: Add a qualification for a personnel.
+ *     tags: [Personnel]
+ *     consumes:
+ *       - multipart/form-data
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Personnel ID
+ *       - in: formData
+ *         name: qualification
+ *         type: file
+ *         required: true
+ *         description: Qualification document file
+ *     responses:
+ *       201:
+ *         description: Qualification added successfully.
+ *
+ *   get:
+ *     summary: Get all qualifications for a personnel.
+ *     tags: [Personnel]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Personnel ID
+ *     responses:
+ *       200:
+ *         description: List of qualifications.
+ *
+ * /personnels/{id}/qualifications/{qualificationId}:
+ *   get:
+ *     summary: Get a specific qualification by ID.
+ *     tags: [Personnel]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: qualificationId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Qualification found.
+ *
+ *   put:
+ *     summary: Update a specific qualification.
+ *     tags: [Personnel]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: qualificationId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             example:
+ *               title: Updated Degree
+ *               institution: New University
+ *     responses:
+ *       200:
+ *         description: Qualification updated.
+ *
+ *   delete:
+ *     summary: Delete a specific qualification.
+ *     tags: [Personnel]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: qualificationId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Qualification deleted.
+ *
+ *
+ *
+ */
+
 router.post(
-  "/:id/qualifications/",
-  cloudinaryQualifications.single("qualification"),
+  '/:id/qualifications/',
+  cloudinaryQualifications.single('qualification'),
   async (req, res, next) => {
     try {
       const qualification = { ...req.body, certificateURL: req.file.path };
@@ -103,7 +310,7 @@ router.post(
   }
 );
 
-router.get("/:id/qualifications/", async (req, res, next) => {
+router.get('/:id/qualifications/', async (req, res, next) => {
   try {
     const { qualifications } = await personnelModel.findById(req.params.id, {
       qualifications: 1,
@@ -116,7 +323,7 @@ router.get("/:id/qualifications/", async (req, res, next) => {
   }
 });
 
-router.get("/:id/qualifications/:qualificationId", async (req, res, next) => {
+router.get('/:id/qualifications/:qualificationId', async (req, res, next) => {
   try {
     const { qualifications } = await personnelModel.findOne(
       {
@@ -144,7 +351,7 @@ router.get("/:id/qualifications/:qualificationId", async (req, res, next) => {
 });
 
 router.delete(
-  "/:id/qualifications/:qualificationId",
+  '/:id/qualifications/:qualificationId',
   async (req, res, next) => {
     try {
       const modifiedQualifications = await personnelModel.findByIdAndUpdate(
@@ -169,7 +376,7 @@ router.delete(
 );
 
 router.put(
-  "/:id/qualifications/:qualificationId",
+  '/:id/qualifications/:qualificationId',
 
   async (req, res, next) => {
     try {
@@ -196,11 +403,11 @@ router.put(
         const modifiedQualifications = await personnelModel.findOneAndUpdate(
           {
             _id: mongoose.Types.ObjectId(req.params.id),
-            "qualifications._id": mongoose.Types.ObjectId(
+            'qualifications._id': mongoose.Types.ObjectId(
               req.params.qualificationId
             ),
           },
-          { $set: { "qualifications.$": qualificationToReplace } },
+          { $set: { 'qualifications.$': qualificationToReplace } },
           {
             runValidators: true,
             new: true,
@@ -217,9 +424,51 @@ router.put(
   }
 );
 
+/**
+ * @swagger
+ * /personnel/{id}/leave_requests:
+ *   post:
+ *     summary: Add a new leave request to a personnel record
+ *     tags: [Personnel - Leaves]
+ *     consumes:
+ *       - multipart/form-data
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         description: ID of the personnel
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: formData
+ *         name: request
+ *         type: file
+ *         required: true
+ *         description: File attachment for the leave request
+ *       - in: formData
+ *         name: type
+ *         type: string
+ *         description: Type of leave
+ *       - in: formData
+ *         name: startDate
+ *         type: string
+ *         format: date
+ *       - in: formData
+ *         name: endDate
+ *         type: string
+ *         format: date
+ *       - in: formData
+ *         name: reason
+ *         type: string
+ *     responses:
+ *       201:
+ *         description: Leave request added successfully
+ *       400:
+ *         description: Validation error or invalid data
+ */
+
 router.post(
-  "/:id/leave_requests",
-  cloudinaryLeaves.single("request"),
+  '/:id/leave_requests',
+  cloudinaryLeaves.single('request'),
   async (req, res, next) => {
     try {
       const leaveRequest = { ...req.body, requestUpload: req.file.path };
@@ -239,9 +488,51 @@ router.post(
   }
 );
 
+/**
+ * @swagger
+ * /personnel/{id}/leaves/{leaveId}/request:
+ *   put:
+ *     summary: Update an existing leave request with a new file or data
+ *     tags: [Personnel - Leaves]
+ *     consumes:
+ *       - multipart/form-data
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *       - in: path
+ *         name: leaveId
+ *         required: true
+ *         schema: { type: string }
+ *       - in: formData
+ *         name: request
+ *         type: file
+ *         required: true
+ *       - in: formData
+ *         name: type
+ *         type: string
+ *       - in: formData
+ *         name: startDate
+ *         type: string
+ *         format: date
+ *       - in: formData
+ *         name: endDate
+ *         type: string
+ *         format: date
+ *       - in: formData
+ *         name: reason
+ *         type: string
+ *     responses:
+ *       200:
+ *         description: Leave request updated
+ *       404:
+ *         description: Leave not found
+ */
+
 router.put(
-  "/:id/leaves/:leaveId/request",
-  cloudinaryLeaves.single("request"),
+  '/:id/leaves/:leaveId/request',
+  cloudinaryLeaves.single('request'),
   async (req, res, next) => {
     try {
       const { leaves } = await personnelModel.findOne(
@@ -269,9 +560,9 @@ router.put(
         const modifiedLeaves = await personnelModel.findOneAndUpdate(
           {
             _id: mongoose.Types.ObjectId(req.params.id),
-            "leaves._id": mongoose.Types.ObjectId(req.params.leaveId),
+            'leaves._id': mongoose.Types.ObjectId(req.params.leaveId),
           },
-          { $set: { "leaves.$": leaveToReplace } },
+          { $set: { 'leaves.$': leaveToReplace } },
           {
             runValidators: true,
             new: true,
@@ -288,9 +579,39 @@ router.put(
   }
 );
 
+/**
+ * @swagger
+ * /personnel/{id}/leaves/{leaveId}/approval:
+ *   put:
+ *     summary: Approve or update approval document for a leave request
+ *     tags: [Personnel - Leaves]
+ *     consumes:
+ *       - multipart/form-data
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *       - in: path
+ *         name: leaveId
+ *         required: true
+ *       - in: formData
+ *         name: approval
+ *         type: file
+ *         required: true
+ *       - in: formData
+ *         name: approvalStatus
+ *         type: string
+ *         enum: [Approved, Rejected, Pending]
+ *     responses:
+ *       200:
+ *         description: Leave approval updated
+ *       404:
+ *         description: Leave not found
+ */
+
 router.put(
-  "/:id/leaves/:leaveId/approval",
-  cloudinaryLeaves.single("approval"),
+  '/:id/leaves/:leaveId/approval',
+  cloudinaryLeaves.single('approval'),
   async (req, res, next) => {
     try {
       const { leaves } = await personnelModel.findOne(
@@ -318,9 +639,9 @@ router.put(
         const modifiedLeaves = await personnelModel.findOneAndUpdate(
           {
             _id: mongoose.Types.ObjectId(req.params.id),
-            "leaves._id": mongoose.Types.ObjectId(req.params.leaveId),
+            'leaves._id': mongoose.Types.ObjectId(req.params.leaveId),
           },
-          { $set: { "leaves.$": leaveToReplace } },
+          { $set: { 'leaves.$': leaveToReplace } },
           {
             runValidators: true,
             new: true,
@@ -337,7 +658,24 @@ router.put(
   }
 );
 
-router.get("/:id/leaves/", async (req, res, next) => {
+/**
+ * @swagger
+ * /personnel/{id}/leaves:
+ *   get:
+ *     summary: Get all leave requests of a specific personnel
+ *     tags: [Personnel - Leaves]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *     responses:
+ *       200:
+ *         description: List of leave records
+ *       404:
+ *         description: Personnel not found
+ */
+
+router.get('/:id/leaves/', async (req, res, next) => {
   try {
     const { leaves } = await personnelModel.findById(req.params.id, {
       leaves: 1,
@@ -350,7 +688,27 @@ router.get("/:id/leaves/", async (req, res, next) => {
   }
 });
 
-router.get("/:id/leaves/:leaveId", async (req, res, next) => {
+/**
+ * @swagger
+ * /personnel/{id}/leaves/{leaveId}:
+ *   get:
+ *     summary: Get a specific leave request by ID
+ *     tags: [Personnel - Leaves]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *       - in: path
+ *         name: leaveId
+ *         required: true
+ *     responses:
+ *       200:
+ *         description: Leave record found
+ *       404:
+ *         description: Leave not found
+ */
+
+router.get('/:id/leaves/:leaveId', async (req, res, next) => {
   try {
     const { leaves } = await personnelModel.findOne(
       {
@@ -377,7 +735,27 @@ router.get("/:id/leaves/:leaveId", async (req, res, next) => {
   }
 });
 
-router.delete("/:id/leaves/:leaveId", async (req, res, next) => {
+/**
+ * @swagger
+ * /personnel/{id}/leaves/{leaveId}:
+ *   delete:
+ *     summary: Delete a specific leave record from a personnel profile
+ *     tags: [Personnel - Leaves]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *       - in: path
+ *         name: leaveId
+ *         required: true
+ *     responses:
+ *       200:
+ *         description: Leave record deleted
+ *       404:
+ *         description: Record not found
+ */
+
+router.delete('/:id/leaves/:leaveId', async (req, res, next) => {
   try {
     const modifiedLeaves = await personnelModel.findByIdAndUpdate(
       req.params.id,
@@ -399,9 +777,30 @@ router.delete("/:id/leaves/:leaveId", async (req, res, next) => {
   }
 });
 
+/**
+ * @swagger
+ * /personnels/{id}/promotions:
+ *   post:
+ *     summary: Add a promotion record
+ *     tags: [Personnel - Promotions]
+ *     consumes:
+ *       - multipart/form-data
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *       - in: formData
+ *         name: promotion
+ *         type: file
+ *         description: Promotion letter file
+ *     responses:
+ *       201:
+ *         description: Promotion added
+ */
+
 router.post(
-  "/:id/promotions",
-  cloudinaryPromotions.single("promotion"),
+  '/:id/promotions',
+  cloudinaryPromotions.single('promotion'),
   async (req, res, next) => {
     try {
       const promotion = { ...req.body, promotionUpload: req.file.path };
@@ -421,9 +820,33 @@ router.post(
   }
 );
 
+/**
+ * @swagger
+ * /personnels/{id}/promotions/{promotionId}:
+ *   put:
+ *     summary: Update a promotion record
+ *     tags: [Personnel - Promotions]
+ *     consumes:
+ *       - multipart/form-data
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *       - in: path
+ *         name: promotionId
+ *         required: true
+ *       - in: formData
+ *         name: promotion
+ *         type: file
+ *         description: Updated promotion file
+ *     responses:
+ *       200:
+ *         description: Promotion updated
+ */
+
 router.put(
-  "/:id/promotions/:promotionId",
-  cloudinaryPromotions.single("promotion"),
+  '/:id/promotions/:promotionId',
+  cloudinaryPromotions.single('promotion'),
   async (req, res, next) => {
     try {
       const { promotions } = await personnelModel.findOne(
@@ -451,9 +874,9 @@ router.put(
         const modifiedPromotion = await personnelModel.findOneAndUpdate(
           {
             _id: mongoose.Types.ObjectId(req.params.id),
-            "promotions._id": mongoose.Types.ObjectId(req.params.promotionId),
+            'promotions._id': mongoose.Types.ObjectId(req.params.promotionId),
           },
-          { $set: { "promotions.$": promotionToReplace } },
+          { $set: { 'promotions.$': promotionToReplace } },
           {
             runValidators: true,
             new: true,
@@ -470,7 +893,22 @@ router.put(
   }
 );
 
-router.get("/:id/promotions/", async (req, res, next) => {
+/**
+ * @swagger
+ * /personnels/{id}/promotions:
+ *   get:
+ *     summary: List all promotions for a personnel
+ *     tags: [ Personnel - Promotions]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *     responses:
+ *       200:
+ *         description: List of promotions
+ */
+
+router.get('/:id/promotions/', async (req, res, next) => {
   try {
     const { promotions } = await personnelModel.findById(req.params.id, {
       promotions: 1,
@@ -483,7 +921,23 @@ router.get("/:id/promotions/", async (req, res, next) => {
   }
 });
 
-router.get("/:id/promotions/:promotionId", async (req, res, next) => {
+/**
+ * @swagger
+ * /personnels/{id}/promotions/{promotionId}:
+ *   get:
+ *     summary: Get a specific promotion by ID
+ *     tags: [Personnel - Promotions]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *       - in: path
+ *         name: promotionId
+ *     responses:
+ *       200:
+ *         description: Promotion details
+ */
+
+router.get('/:id/promotions/:promotionId', async (req, res, next) => {
   try {
     const { promotions } = await personnelModel.findOne(
       {
@@ -510,7 +964,23 @@ router.get("/:id/promotions/:promotionId", async (req, res, next) => {
   }
 });
 
-router.delete("/:id/promotions/:promotionId", async (req, res, next) => {
+/**
+ * @swagger
+ * /personnels/{id}/promotions/{promotionId}:
+ *   delete:
+ *     summary: Delete a promotion by ID
+ *     tags: [Personnel - Promotions]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *       - in: path
+ *         name: promotionId
+ *     responses:
+ *       200:
+ *         description: Promotion deleted
+ */
+
+router.delete('/:id/promotions/:promotionId', async (req, res, next) => {
   try {
     const modifiedPromotions = await personnelModel.findByIdAndUpdate(
       req.params.id,
@@ -532,9 +1002,30 @@ router.delete("/:id/promotions/:promotionId", async (req, res, next) => {
   }
 });
 
+/**
+ * @swagger
+ * /personnels/{id}/query-issues:
+ *   post:
+ *     summary: Issue a query to personnel
+ *     tags: [Personnel - Queries]
+ *     consumes:
+ *       - multipart/form-data
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *       - in: formData
+ *         name: issuedQuery
+ *         type: file
+ *         description: Issued query file
+ *     responses:
+ *       201:
+ *         description: Query issued successfully
+ */
+
 router.post(
-  "/:id/query-issues",
-  cloudinaryLeaves.single("issuedQuery"),
+  '/:id/query-issues',
+  cloudinaryLeaves.single('issuedQuery'),
   async (req, res, next) => {
     try {
       const queryIssued = { ...req.body, queryUpload: req.file.path };
@@ -554,9 +1045,30 @@ router.post(
   }
 );
 
+/**
+ * @swagger
+ * /personnels/{id}/queries/{queryId}:
+ *   put:
+ *     summary: Update a query
+ *     tags: [Personnel - Queries]
+ *     consumes:
+ *       - multipart/form-data
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *       - in: path
+ *         name: queryId
+ *       - in: formData
+ *         name: issuedQuery
+ *         type: file
+ *     responses:
+ *       200:
+ *         description: Query updated
+ */
+
 router.put(
-  "/:id/queries/:queryId/",
-  cloudinaryLeaves.single("issuedQuery"),
+  '/:id/queries/:queryId/',
+  cloudinaryLeaves.single('issuedQuery'),
   async (req, res, next) => {
     try {
       const { queries } = await personnelModel.findOne(
@@ -584,9 +1096,9 @@ router.put(
         const modifiedQueries = await personnelModel.findOneAndUpdate(
           {
             _id: mongoose.Types.ObjectId(req.params.id),
-            "queries._id": mongoose.Types.ObjectId(req.params.queryId),
+            'queries._id': mongoose.Types.ObjectId(req.params.queryId),
           },
-          { $set: { "queries.$": queryToReplace } },
+          { $set: { 'queries.$': queryToReplace } },
           {
             runValidators: true,
             new: true,
@@ -603,9 +1115,31 @@ router.put(
   }
 );
 
+/**
+ * @swagger
+ * /personnels/{id}/queries/{queryId}/response:
+ *   put:
+ *     summary: Upload a query response
+ *     tags: [Personnel - Queries]
+ *     consumes:
+ *       - multipart/form-data
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *       - in: path
+ *         name: queryId
+ *       - in: formData
+ *         name: queryResponse
+ *         type: file
+ *         description: Query response file
+ *     responses:
+ *       200:
+ *         description: Query response uploaded
+ */
+
 router.put(
-  "/:id/queries/:queryId/response",
-  cloudinaryQueries.single("queryResponse"),
+  '/:id/queries/:queryId/response',
+  cloudinaryQueries.single('queryResponse'),
   async (req, res, next) => {
     try {
       const { queries } = await personnelModel.findOne(
@@ -633,9 +1167,9 @@ router.put(
         const modifiedQueries = await personnelModel.findOneAndUpdate(
           {
             _id: mongoose.Types.ObjectId(req.params.id),
-            "queries._id": mongoose.Types.ObjectId(req.params.queryId),
+            'queries._id': mongoose.Types.ObjectId(req.params.queryId),
           },
-          { $set: { "queries.$": queryToReplace } },
+          { $set: { 'queries.$': queryToReplace } },
           {
             runValidators: true,
             new: true,
@@ -652,7 +1186,21 @@ router.put(
   }
 );
 
-router.get("/:id/queries/", async (req, res, next) => {
+/**
+ * @swagger
+ * /personnels/{id}/queries:
+ *   get:
+ *     summary: Get all issued queries for a personnel
+ *     tags: [Personnel - Queries]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *     responses:
+ *       200:
+ *         description: List of queries
+ */
+
+router.get('/:id/queries/', async (req, res, next) => {
   try {
     const { queries } = await personnelModel.findById(req.params.id, {
       queries: 1,
@@ -665,7 +1213,23 @@ router.get("/:id/queries/", async (req, res, next) => {
   }
 });
 
-router.get("/:id/queries/:queryId", async (req, res, next) => {
+/**
+ * @swagger
+ * /personnels/{id}/queries/{queryId}:
+ *   get:
+ *     summary: Get a specific query by ID
+ *     tags: [Personnel - Queries]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *       - in: path
+ *         name: queryId
+ *     responses:
+ *       200:
+ *         description: Query details
+ */
+
+router.get('/:id/queries/:queryId', async (req, res, next) => {
   try {
     const { queries } = await personnelModel.findOne(
       {
@@ -692,7 +1256,23 @@ router.get("/:id/queries/:queryId", async (req, res, next) => {
   }
 });
 
-router.delete("/:id/queries/:queryId", async (req, res, next) => {
+/**
+ * @swagger
+ * /personnel/{id}/queries/{queryId}:
+ *   delete:
+ *     summary: Delete a query by ID
+ *     tags: [Personnel - Queries]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *       - in: path
+ *         name: queryId
+ *     responses:
+ *       200:
+ *         description: Query deleted
+ */
+
+router.delete('/:id/queries/:queryId', async (req, res, next) => {
   try {
     const modifiedQueries = await personnelModel.findByIdAndUpdate(
       req.params.id,

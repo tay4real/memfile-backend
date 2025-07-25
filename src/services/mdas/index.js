@@ -1,10 +1,35 @@
+/**
+ * @swagger
+ * tags:
+ *   name: MDAs
+ *  description: Operations related to Ministries, Departments, and Agencies (MDAs)
+ */
 const mdaRouter = require('express').Router();
 const { authorize, isAdmin } = require('../../utils/auth/middleware');
 const q2m = require('query-to-mongo');
 const MDAModel = require('./mda.schema');
 const mongoose = require('mongoose');
 
-// List all MDAS
+/**
+ * @swagger
+ * /mdas:
+ *   get:
+ *     tags:
+ *       - MDAs
+ *     summary: Get all MDAs
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: name
+ *         schema:
+ *           type: string
+ *         description: Filter by MDA name
+ *     responses:
+ *       200:
+ *         description: List of MDAs
+ */
+
 mdaRouter.get('/', authorize, async (req, res, next) => {
   try {
     const query = q2m(req.query);
@@ -20,7 +45,27 @@ mdaRouter.get('/', authorize, async (req, res, next) => {
   }
 });
 
-// Returns an MDA
+/**
+ * @swagger
+ * /mdas/{id}:
+ *   get:
+ *     tags:
+ *       - MDAs
+ *     summary: Get a single MDA by ID
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: MDA ID
+ *     responses:
+ *       200:
+ *         description: Single MDA details
+ */
+
 mdaRouter.get('/:id', authorize, async (req, res, next) => {
   try {
     const mda = await MDAModel.findById(req.params.id);
@@ -30,7 +75,31 @@ mdaRouter.get('/:id', authorize, async (req, res, next) => {
   }
 });
 
-// create a new MDA
+/**
+ * @swagger
+ * /mdas:
+ *   post:
+ *     tags:
+ *       - MDAs
+ *     summary: Create a new MDA
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               shortName:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: MDA added successfully
+ */
+
 mdaRouter.post('/', authorize, isAdmin, async (req, res, next) => {
   try {
     console.log(req.body);
@@ -53,6 +122,33 @@ mdaRouter.post('/', authorize, isAdmin, async (req, res, next) => {
   }
 });
 
+/**
+ * @swagger
+ * /mdas/{id}:
+ *   put:
+ *     tags:
+ *       - MDAs
+ *     summary: Update an MDA
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: MDA ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       201:
+ *         description: MDA updated successfully
+ */
+
 mdaRouter.put('/:id', authorize, isAdmin, async (req, res, next) => {
   try {
     const mda = await MDAModel.findByIdAndUpdate(req.params.id, req.body, {
@@ -69,6 +165,27 @@ mdaRouter.put('/:id', authorize, isAdmin, async (req, res, next) => {
   }
 });
 
+/**
+ * @swagger
+ * /mdas/{id}:
+ *   delete:
+ *     tags:
+ *       - MDAs
+ *     summary: Delete a specific MDA
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: MDA ID
+ *     responses:
+ *       200:
+ *         description: MDA record deleted successfully
+ */
+
 mdaRouter.delete('/:id', authorize, isAdmin, async (req, res, next) => {
   try {
     const mda = await MDAModel.findByIdAndDelete(req.params.id);
@@ -81,6 +198,20 @@ mdaRouter.delete('/:id', authorize, isAdmin, async (req, res, next) => {
     next(new Error(error.message));
   }
 });
+
+/**
+ * @swagger
+ * /mdas:
+ *   delete:
+ *     tags:
+ *       - MDAs
+ *     summary: Delete all MDAs
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: All MDAs deleted successfully
+ */
 
 mdaRouter.delete('/', authorize, isAdmin, async (req, res, next) => {
   try {
@@ -101,6 +232,36 @@ mdaRouter.delete('/', authorize, isAdmin, async (req, res, next) => {
     );
   }
 });
+
+/**
+ * @swagger
+ * /mdas/{id}/departments:
+ *   post:
+ *     tags:
+ *       - Departments
+ *     summary: Add a new department to an MDA
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: MDA ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               deptName:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Department added successfully
+ */
 
 mdaRouter.post(
   '/:id/departments/',
@@ -144,6 +305,27 @@ mdaRouter.post(
   }
 );
 
+/**
+ * @swagger
+ * /mdas/{id}/departments:
+ *   get:
+ *     tags:
+ *       - Departments
+ *     summary: Get all departments in a specific MDA
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: MDA ID
+ *     responses:
+ *       200:
+ *         description: List of departments
+ */
+
 mdaRouter.get('/:id/departments/', authorize, async (req, res, next) => {
   try {
     const { departments } = await MDAModel.findById(req.params.id, {
@@ -156,6 +338,33 @@ mdaRouter.get('/:id/departments/', authorize, async (req, res, next) => {
     next(error);
   }
 });
+
+/**
+ * @swagger
+ * /mdas/{id}/departments/{departmentId}:
+ *   get:
+ *     tags:
+ *       - Departments
+ *     summary: Get a department by ID from an MDA
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: MDA ID
+ *       - in: path
+ *         name: departmentId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Department ID
+ *     responses:
+ *       200:
+ *         description: Department details
+ */
 
 mdaRouter.get(
   '/:id/departments/:departmentId',
@@ -182,6 +391,39 @@ mdaRouter.get(
     }
   }
 );
+
+/**
+ * @swagger
+ * /mdas/{id}/departments/{departmentId}:
+ *   put:
+ *     tags:
+ *       - Departments
+ *     summary: Update a department in an MDA
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: MDA ID
+ *       - in: path
+ *         name: departmentId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Department ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Department updated successfully
+ */
 
 mdaRouter.put(
   '/:id/departments/:departmentId',
@@ -233,6 +475,33 @@ mdaRouter.put(
     }
   }
 );
+
+/**
+ * @swagger
+ * /mdas/{id}/departments/{departmentId}:
+ *   delete:
+ *     tags:
+ *       - Departments
+ *     summary: Delete a department from an MDA
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: MDA ID
+ *       - in: path
+ *         name: departmentId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Department ID
+ *     responses:
+ *       200:
+ *         description: Department deleted successfully
+ */
 
 mdaRouter.delete(
   '/:id/departments/:departmentId',

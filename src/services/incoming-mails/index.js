@@ -1,30 +1,49 @@
-const mailRouter = require("express").Router();
+/**
+ * @swagger
+ * tags:
+ *   name: Incoming Mails
+ *   description: Operations related to receiving and managing incoming mails
+ */
+const mailRouter = require('express').Router();
 
-const multer = require("multer");
-const { writeFile } = require("fs-extra");
-const { join } = require("path");
-// const upload = multer({});
+const multer = require('multer');
+const { writeFile } = require('fs-extra');
+const { join } = require('path');
 
-// const incomingMailStorage = join(
-//   __dirname,
-//   "../../../public/filestorage/incomingmails"
-// );
-
-const PDFDocument = require("pdfkit");
+const PDFDocument = require('pdfkit');
 
 const {
   cloudinaryIncomingMail,
   cloudinaryDestroy,
-} = require("../../utils/cloudinary");
+} = require('../../utils/cloudinary');
 
-const q2m = require("query-to-mongo");
+const q2m = require('query-to-mongo');
 
-const { authorize, isAdmin } = require("../../utils/auth/middleware");
+const { authorize, isAdmin } = require('../../utils/auth/middleware');
 
-const mailModel = require("./mail.schema");
-const { Console } = require("console");
+const mailModel = require('./mail.schema');
+const { Console } = require('console');
 
-mailRouter.get("/", authorize, async (req, res, next) => {
+/**
+ * @swagger
+ * /incoming-mails/:
+ *   get:
+ *     summary: Get all incoming mails
+ *     tags: [Incoming Mails]
+ *     parameters:
+ *       - in: query
+ *         name: filter
+ *         schema:
+ *           type: string
+ *         description: Optional filters using query-to-mongo syntax
+ *     responses:
+ *       200:
+ *         description: List of incoming mails
+ *       500:
+ *         description: Server error
+ */
+
+mailRouter.get('/', authorize, async (req, res, next) => {
   try {
     const query = q2m(req.query);
 
@@ -40,7 +59,29 @@ mailRouter.get("/", authorize, async (req, res, next) => {
   }
 });
 
-mailRouter.get("/:id", authorize, async (req, res, next) => {
+/**
+ * @swagger
+ * /incoming-mails/{id}:
+ *   get:
+ *     summary: Get an incoming mail by ID
+ *     tags: [Incoming Mails]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Mail ID
+ *     responses:
+ *       200:
+ *         description: Incoming mail details
+ *       404:
+ *         description: Mail not found
+ *       500:
+ *         description: Server error
+ */
+
+mailRouter.get('/:id', authorize, async (req, res, next) => {
   try {
     const mail = await mailModel.findById(req.params.id);
     res.send(mail);
@@ -49,7 +90,44 @@ mailRouter.get("/:id", authorize, async (req, res, next) => {
   }
 });
 
-mailRouter.post("/", authorize, async (req, res, next) => {
+/**
+ * @swagger
+ * /incoming-mails/:
+ *   post:
+ *     summary: Create a new incoming mail
+ *     tags: [Incoming Mails]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               ref_no:
+ *                 type: string
+ *               subject:
+ *                 type: string
+ *               sender:
+ *                 type: string
+ *               recipient:
+ *                 type: string
+ *               dispatcher:
+ *                 type: string
+ *               date_received:
+ *                 type: string
+ *                 format: date-time
+ *               upload_url:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *     responses:
+ *       201:
+ *         description: Mail created successfully
+ *       500:
+ *         description: Server error
+ */
+
+mailRouter.post('/', authorize, async (req, res, next) => {
   try {
     const newMail = await new mailModel(req.body).save();
     res.send(newMail._id);
@@ -58,47 +136,45 @@ mailRouter.post("/", authorize, async (req, res, next) => {
   }
 });
 
-// mailRouter.post("/:id/upload", upload.array("mail"), async (req, res, next) => {
-//   try {
-//     let image_path_arr = [];
-
-//     const arrayOfPromises = req.files.map((file) => {
-//       writeFile(join(incomingMailStorage, file.originalname), file.buffer);
-//       image_path_arr.push(join(incomingMailStorage, file.originalname));
-//     });
-//     console.log(image_path_arr);
-//     await Promise.all(arrayOfPromises);
-//     if (image_path_arr.length !== 0) {
-//       image_path_arr.map(async (image_path) => {
-//         await mailModel.findByIdAndUpdate(
-//           req.params.id,
-//           { upload_url: image_path },
-//           {
-//             runValidators: true,
-//             returnOriginal: false,
-//             useFindAndModify: false,
-//           }
-//         );
-//       });
-//       res.send("Uploaded Successfully");
-//     }
-//   } catch (error) {
-//     console.log(error);
-//     next(error);
-//   }
-// });
+/**
+ * @swagger
+ * /incoming-mails/{id}/upload:
+ *   post:
+ *     summary: Upload attachments for a specific incoming mail
+ *     tags: [Incoming Mails]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: ID of the mail to upload files to
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               mail:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: binary
+ *     responses:
+ *       200:
+ *         description: Files uploaded successfully
+ *       500:
+ *         description: Server error
+ */
 
 mailRouter.post(
-  "/:id/upload",
+  '/:id/upload',
   authorize,
-  cloudinaryIncomingMail.array("mail"),
+  cloudinaryIncomingMail.array('mail'),
   async (req, res, next) => {
     try {
-      // let image_path_arr = [];
-
       const upload = await req.files.map(async (file) => {
-        // image_path_arr.push(req.file.path);
-
         console.log(file);
         await mailModel.findByIdAndUpdate(req.params.id, {
           $push: {
@@ -108,24 +184,8 @@ mailRouter.post(
       });
 
       if (upload) {
-        res.send("Uploaded Successfully");
+        res.send('Uploaded Successfully');
       }
-      // console.log(image_path_arr);
-      // await Promise.all(arrayOfPromises);
-      // if (image_path_arr.length !== 0) {
-      //   image_path_arr.map(async (image_path) => {
-      //     await mailModel.findByIdAndUpdate(
-      //       req.params.id,
-      //       { upload_url: image_path },
-      //       {
-      //         runValidators: true,
-      //         returnOriginal: false,
-      //         useFindAndModify: false,
-      //       }
-      //     );
-      //   });
-      //   res.send("Uploaded Successfully");
-      // }
     } catch (error) {
       console.log(error);
       next(error);
@@ -133,48 +193,79 @@ mailRouter.post(
   }
 );
 
-// mailRouter.post(
-//   "/:id/upload",
-//   cloudinaryIncomingMail.single("mail"),
-//   async (req, res, next) => {
-//     try {
-//       let img_path = await req.file.path;
+/**
+ * @swagger
+ * /incoming-mails/{id}:
+ *   put:
+ *     summary: Update an existing incoming mail
+ *     tags: [Incoming Mails]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: Mail ID
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             description: Mail fields to update
+ *     responses:
+ *       200:
+ *         description: Incoming mail updated successfully
+ *       404:
+ *         description: Incoming mail not found
+ *       500:
+ *         description: Server error
+ */
 
-//       await mailModel.findByIdAndUpdate(
-//         req.params.id,
-//         { upload_url: img_path },
-//         {
-//           runValidators: true,
-//           returnOriginal: false,
-//           useFindAndModify: false,
-//         }
-//       );
-//       if (img_path) {
-//         res.send("Uploaded Successfully");
-//       }
-//     } catch (error) {
-//       next(error);
-//     }
-//   }
-// );
-
-mailRouter.put("/:id", authorize, async (req, res) => {
+mailRouter.put('/:id', authorize, async (req, res) => {
   try {
     const mail = await mailModel.findByIdAndUpdate(req.params.id, req.body, {
       runValidators: true,
       new: true,
     });
     if (mail) {
-      res.send("Incoming mail updated successfully");
+      res.send('Incoming mail updated successfully');
     } else {
-      res.status(404).send("Incoming mail not found");
+      res.status(404).send('Incoming mail not found');
     }
   } catch (error) {
     next(new Error(error.message));
   }
 });
 
-mailRouter.get("/:id/pdf", async (req, res, next) => {
+/**
+ * @swagger
+ * /incoming-mails/{id}/pdf:
+ *   get:
+ *     summary: Generate a PDF version of the mail
+ *     tags: [Incoming Mails]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: ID of the mail
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: PDF generated successfully
+ *         content:
+ *           application/pdf:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       404:
+ *         description: Mail not found
+ *       500:
+ *         description: Server error
+ */
+
+mailRouter.get('/:id/pdf', async (req, res, next) => {
   try {
     const mail = await mailModel.findById(req.params.id);
     let doc = new PDFDocument();
@@ -194,16 +285,36 @@ mailRouter.get("/:id/pdf", async (req, res, next) => {
     );
     doc.end();
     await res.writeHead(200, {
-      "Content-Type": "application/pdf",
+      'Content-Type': 'application/pdf',
     });
-    res.status(201).send("OK");
+    res.status(201).send('OK');
   } catch (error) {
     next(error);
   }
 });
 
+/**
+ * @swagger
+ * /incoming-mails/changestatus/{id}:
+ *   put:
+ *     summary: Mark an incoming mail as filed
+ *     tags: [Incoming Mails]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Mail ID
+ *     responses:
+ *       200:
+ *         description: Status updated successfully
+ *       500:
+ *         description: Server error
+ */
+
 mailRouter.put(
-  "/changestatus/:id",
+  '/changestatus/:id',
   authorize,
   isAdmin,
   async (req, res, next) => {
@@ -218,20 +329,55 @@ mailRouter.put(
   }
 );
 
-mailRouter.delete("/:id", authorize, isAdmin, async (req, res, next) => {
+/**
+ * @swagger
+ * /incoming-mails/{id}:
+ *   delete:
+ *     summary: Delete a specific incoming mail
+ *     tags: [Incoming Mails]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Mail ID
+ *     responses:
+ *       200:
+ *         description: Deleted successfully
+ *       404:
+ *         description: Mail not found
+ *       500:
+ *         description: Server error
+ */
+
+mailRouter.delete('/:id', authorize, isAdmin, async (req, res, next) => {
   try {
     const mail = await mailModel.findByIdAndDelete(req.params.id);
     if (mail) {
-      res.send("Deleted successfully");
+      res.send('Deleted successfully');
     } else {
-      res.status(404).send("Mail Not found");
+      res.status(404).send('Mail Not found');
     }
   } catch (error) {
     res.status(500).send(error.message);
   }
 });
 
-mailRouter.delete("/", authorize, isAdmin, async (req, res, next) => {
+/**
+ * @swagger
+ * /incoming-mails/:
+ *   delete:
+ *     summary: Delete all incoming mails
+ *     tags: [Incoming Mails]
+ *     responses:
+ *       200:
+ *         description: All mails deleted successfully
+ *       500:
+ *         description: Server error
+ */
+
+mailRouter.delete('/', authorize, isAdmin, async (req, res, next) => {
   try {
     const data = await mailModel.deleteMany({});
     if (data) {
@@ -246,23 +392,36 @@ mailRouter.delete("/", authorize, isAdmin, async (req, res, next) => {
       new Error({
         message:
           err.message ||
-          "Some error occurred while removing all incoming mails.",
+          'Some error occurred while removing all incoming mails.',
       })
     );
   }
 });
 
-mailRouter.get("/report/stats", authorize, async (req, res) => {
+/**
+ * @swagger
+ * /incoming-mails/report/stats:
+ *   get:
+ *     summary: Get monthly statistics of incoming mails
+ *     tags: [Incoming Mails]
+ *     responses:
+ *       200:
+ *         description: Monthly stats retrieved
+ *       500:
+ *         description: Server error
+ */
+
+mailRouter.get('/report/stats', authorize, async (req, res) => {
   try {
     const data = await mailModel.aggregate([
       {
         $project: {
-          month: { $month: "$createdAt" },
+          month: { $month: '$createdAt' },
         },
       },
       {
         $group: {
-          _id: "$month",
+          _id: '$month',
           total: { $sum: 1 },
         },
       },
@@ -273,7 +432,20 @@ mailRouter.get("/report/stats", authorize, async (req, res) => {
   }
 });
 
-mailRouter.get("/report/counts", authorize, async (req, res) => {
+/**
+ * @swagger
+ * /incoming-mails/report/counts:
+ *   get:
+ *     summary: Get total number of incoming mails
+ *     tags: [Incoming Mails]
+ *     responses:
+ *       200:
+ *         description: Total count returned
+ *       500:
+ *         description: Server error
+ */
+
+mailRouter.get('/report/counts', authorize, async (req, res) => {
   try {
     const total = await mailModel.countDocuments();
     res.status(200).json({ total });
@@ -282,7 +454,30 @@ mailRouter.get("/report/counts", authorize, async (req, res) => {
   }
 });
 
-mailRouter.post("/search/results", authorize, async (req, res) => {
+/**
+ * @swagger
+ * /incoming-mails/search/results:
+ *   post:
+ *     summary: Search incoming mails by ref_no, subject, sender or recipient
+ *     tags: [Incoming Mails]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               criteria:
+ *                 type: string
+ *                 description: Search keyword
+ *     responses:
+ *       200:
+ *         description: Search results returned
+ *       500:
+ *         description: Server error
+ */
+
+mailRouter.post('/search/results', authorize, async (req, res) => {
   try {
     const searchVariable = req.body.criteria;
     const search = [];
@@ -295,11 +490,11 @@ mailRouter.post("/search/results", authorize, async (req, res) => {
       searchVariable.charAt(0).toUpperCase() + searchVariable.slice(1)
     );
 
-    const arr = searchVariable.split(" ");
+    const arr = searchVariable.split(' ');
     for (let i = 0; i < arr.length; i++) {
       arr[i] = arr[i].charAt(0).toUpperCase() + arr[i].slice(1);
     }
-    const capitalizeFirstLetterPerWord = arr.join(" ");
+    const capitalizeFirstLetterPerWord = arr.join(' ');
 
     search.push(capitalizeFirstLetterPerWord);
 
@@ -307,25 +502,25 @@ mailRouter.post("/search/results", authorize, async (req, res) => {
 
     for (let i = 0; i < search.length; i++) {
       const result = await mailModel.find({
-        ref_no: new RegExp(".*" + search[i] + ".*"),
+        ref_no: new RegExp('.*' + search[i] + '.*'),
       });
       if (result) {
         searchResult.push(...result);
       }
       const result2 = await mailModel.find({
-        subject: new RegExp(".*" + search[i] + ".*"),
+        subject: new RegExp('.*' + search[i] + '.*'),
       });
       if (result2) {
         searchResult.push(...result2);
       }
       const result3 = await mailModel.find({
-        sender: new RegExp(".*" + search[i] + ".*"),
+        sender: new RegExp('.*' + search[i] + '.*'),
       });
       if (result3) {
         searchResult.push(...result3);
       }
       const result4 = await mailModel.find({
-        recipient: new RegExp(".*" + search[i] + ".*"),
+        recipient: new RegExp('.*' + search[i] + '.*'),
       });
       if (result4) {
         searchResult.push(...result4);
