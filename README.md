@@ -46,14 +46,19 @@ http://localhost:4000/api
 
 ## 📌 Available Routes
 
-| Resource       | Base Path    | Description                              |
-| -------------- | ------------ | ---------------------------------------- |
-| Auth           | `/auth`      | User registration and login              |
-| Users          | `/users`     | User profile, avatars, status            |
-| General Files  | `/files`     | Upload, list, and manage general files   |
-| Incoming Mails | `/mails/in`  | CRUD operations for incoming mails       |
-| Outgoing Mails | `/mails/out` | Manage and send outgoing correspondence  |
-| MDAs           | `/mdas`      | Manage ministries, departments, agencies |
+| Resource               | Base Path                | Description                                                                                |
+| ---------------------- | ------------------------ | ------------------------------------------------------------------------------------------ |
+| Auth                   | `/auth`                  | User registration and login                                                                |
+| Users                  | `/users`                 | User profile, avatars, status                                                              |
+| General Files          | `/general-files`         | Upload, list, and manage general files                                                     |
+| Incoming Mails         | `/incoming-mails`        | CRUD operations for incoming mails                                                         |
+| Outgoing Mails         | `/outgoing-mails`        | Manage and send outgoing correspondence                                                    |
+| MDAs                   | `/mdas`                  | Manage ministries, departments, agencies                                                   |
+| Departments            | `/depts`                 | Manage departments within an MDA                                                           |
+| Personnels             | `/personnels`            | Manage personnel records, including their qualifications, leaves, promotions, and queries. |
+| Personal Files         | `/personal-files`        | Operations related to personal files management                                            |
+| General File Movement  | `/general-filemovement`  | APIs to request, charge, and return general files between Users                            |
+| Personal File Movemnet | `/personal-filemovement` | APIs to request, charge, and return personal files between users.                          |
 
 ---
 
